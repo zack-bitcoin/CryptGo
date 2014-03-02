@@ -1,7 +1,11 @@
-You need to install:
+======INSTALL======
+You need these 3rd party programs:
+http://www.python.org/download/
+http://json-rpc.org/wiki/python-json-rpc (which may require http://bazaar.canonical.com/en/ )
 https://www.torproject.org/projects/torbrowser.html.en
 https://litecoin.org/ 
 http://www.privoxy.org/
+https://github.com/vbuterin/pybitcointools
 
 torrc needs to be configured so that you have an onion url.
 The onion url is used to share blocks between the miners.
@@ -17,3 +21,16 @@ HiddenServicePort 80 127.0.0.1:8071
 privoxy config file needs a line uncommented. In my config file, the line
 was at about line number 1300 or so, it says:
         forward-socks5   /               127.0.0.1:9050 .
+
+======RUN======
+To send your mined blocks to the network, you need listener running:
+python quick_listen.py
+
+To mine blocks and to download the chain, you need the miner running:
+python quick_mine.py
+
+To play go, you need the gui:
+python go_gui.py
+
+To look at the gui and play go, send you browser to: 
+http://localhost:8090
