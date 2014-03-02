@@ -1,5 +1,5 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-import string,cgi,time, json, random, copy, pickle, image64, os
+import string,cgi,time, json, random, copy, pickle, os
 PORT=8090
 import blockchain, state_library, go
 import pybitcointools as pt
@@ -146,10 +146,10 @@ def home(dic):
     return out.format('')
 def hex2htmlPicture(string):
     return '<img height="{}" src="data:image/png;base64,{}">{}'.format(str(piece_size), string, '{}')
-def file2hexPicture(fil):
-    return image64.convert(fil)
-def file2htmlPicture(fil):
-    return hex2htmlPicture(file2hexPicture(fil))
+#def file2hexPicture(fil):
+#    return image64.convert(fil)
+#def file2htmlPicture(fil):
+#    return hex2htmlPicture(file2hexPicture(fil))
 def newline():
     return '''<br />
 {}'''

@@ -1,0 +1,19 @@
+You need to install:
+https://www.torproject.org/projects/torbrowser.html.en
+https://litecoin.org/ 
+http://www.privoxy.org/
+
+torrc needs to be configured so that you have an onion url.
+The onion url is used to share blocks between the miners.
+---Add these lines to your torrc---
+SocksListenAddress 127.0.0.1
+SocksPort 9050
+ControlPort 9051
+HiddenServiceDir /location/of/file/that/contains/this/readme
+HiddenServicePort 80 127.0.0.1:8071
+-----------------------------------
+
+
+privoxy config file needs a line uncommented. In my config file, the line
+was at about line number 1300 or so, it says:
+        forward-socks5   /               127.0.0.1:9050 .

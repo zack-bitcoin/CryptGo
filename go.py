@@ -82,6 +82,9 @@ def remove_dead_stones(board, move):
     return board
 
 def nextTurnCheck(i, state):
+    if i['game_name'] not in state:
+        print('19')
+        return False
     board=state[i['game_name']]
     if len(state.keys())==0:
         print('2')
