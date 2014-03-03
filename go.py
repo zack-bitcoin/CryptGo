@@ -1,6 +1,6 @@
 import pybitcointools as pt
-import blockchain, copy
-newgame_sig_list=['id', 'type', 'game_name', 'pubkey_white', 'pubkey_black', 'count', 'whos_turn', 'white', 'time', 'black', 'size']
+import blockchain, copy, state_library
+newgame_sig_list=['id', 'type', 'game_name', 'pubkey_white', 'pubkey_black', 'count', 'whos_turn', 'white', 'time', 'black', 'size', 'amount']
 nextturn_sig_list=['id', 'game_name', 'type', 'count', 'where']
 def valid_board(board, move):
     #tells whether this is a valid move to make on this board.
@@ -22,9 +22,8 @@ def alive(loc, mine, yours, size):#is my piece at loc still alive?
     if loc in mine:
         yours.append(loc)
         return alive([loc[0]+1, loc[1]], mine, yours, size) or alive([loc[0]-1, loc[1]], mine, yours, size) or alive([loc[0], loc[1]+1], mine, yours, size) or alive([loc[0], loc[1]-1], mine, yours, size)
-def next_board(board, move):
+def next_board(board, move, count):
 #how does dictionary "board" change between moves?
-            #this assumes that move is valid.<--HOW!?!?!
     if board['whos_turn']=='black':
         color='black'
         other_color='white'
@@ -35,8 +34,12 @@ def next_board(board, move):
     board[color]+=[move]
     board['whos_turn']=other_color
     board=remove_dead_stones(board, move)
+    board['last_move_time']=count
     return board
 def new_game(tx):
+    print('tx: ' +str(tx))
+    state=state_library.current_state()
+    tx['last_move_time']=state['length']
     tx.pop('signature')
     tx.pop('id')
     tx.pop('count')
@@ -102,11 +105,17 @@ def nextTurnCheck(i, state):
         print('state: ' +str(state))
         print('14')
         return False
-    n=next_board(copy.deepcopy(board), i['where'])
+    n=next_board(copy.deepcopy(board), i['where'], state['length'])
     if (len(n['black'])+len(n['white']))<=(len(board['black'])+len(board['white'])):#if it kills, then it lives
 #        error('here')
         return True
     return valid_board(board, i)
+def winGameCheck(tx, state):
+    game=state[tx['game_name']]
+    print('game: ' +str(game))
+    if game['last_move_time']+game['time']>=state['length']:
+        return False
+    return True
 def newGameCheck(i, state):
     if len(i['game_name'])>129:
         print('name too long')
@@ -122,7 +131,7 @@ def newGameCheck(i, state):
         if type(j)!=type([1,2]) or len(j)!=2:
             print('5')
             return False
-    if 'time' not in i:
+    if 'time' not in i or 'size' not in i or 'white' not in i or 'black' not in i:
         print('12')
         return False
     if (type(i['time']) != type(3)):
@@ -133,5 +142,19 @@ def newGameCheck(i, state):
         return False
     if type(i['white']) != type([1,2]) or type(['black']) != type([1,2]):
         print('6')
+        return False
+    if 'amount' not in i:
+        print('bet error')
+        return False
+    if type(i['amount'])!=type(10):
+        print('bet error 2')
+        return False
+    sign=blockchain.message2signObject(i, newgame_sig_list)
+    if not pt.ecdsa_verify(sign, i['signature'], i['pubkey_black']):
+        print('i: ' +str(i))
+        print('signature error')
+        return False
+    if i['amount']>0 and not pt.ecdsa_verify(sign, i['signature_white'], pubkey_white):
+        print('signature error 2')
         return False
     return True

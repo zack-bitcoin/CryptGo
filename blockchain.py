@@ -8,7 +8,7 @@ except:
 #bitcoin = ServiceProxy("http://user:HkTlSzJkY7@127.0.0.1:8332/")
 bitcoin=ServiceProxy("http://:hfjkdahflkjsdfa@127.0.0.1:8331/")#actually litecoin
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=523218-1220
+genesisbitcoin=524158-1220
 #genesisbitcoin=516070#lazy, only wait 6 seconds per block.
 chain=[genesis]
 chain_db='chain.db'
@@ -44,46 +44,53 @@ def reset_chain():
 def push_appendDB(file, tx):
     with open(file, 'a') as myfile:
         myfile.write(json.dumps(tx)+'\n')
+def add_transactions(txs):#to local pool
+    #This function is order txs**2, that is risky
+    txs_orig=copy.deepcopy(txs)
+    count=0
+    for tx in txs_orig:
+        if add_transaction(tx):
+            count+=1
+            txs.remove(tx)
+    if count>0:
+        add_transactions(txs)
 def add_transaction(tx):#to local pool
-    print("ADDING A TRANSACTION")
     transactions=load_transactions()
-#    print('tx: ' +str(tx))
     state=state_library.current_state()
     if verify_transactions(transactions+[tx], state)['bool']:
-        if len(transactions)>3:
-            error('here')
         push_appendDB(transactions_database, tx)
+        return True
+    return False
 def chain_push(block):
     statee=state_library.current_state()    
     if new_block_check(block, statee):
         state=verify_transactions(block['transactions'], statee)
-#        print('state: ' +str(state))
-#        if statee['length']>=state['newstate']['length']:
-#            error('hrer')
         state=state['newstate']
         state['length']+=1
         state['recent_hash']=block['sha']
         state_library.save_state(state)
         txs=load_transactions()
         reset_transactions()
-        for tx in txs:
-            add_transaction(tx)
+        add_transactions(txs)
         return push_appendDB(chain_db, block)
     else:
         return 'bad'
 def chain_unpush():
     chain=load_chain()
+    orphaned_txs=[]
+    if 'transactions' in chain[0]:
+        orphaned_txs=chain[0]['transactions']
     chain=chain[:-1]
     reset_chain()
     state=state_library.empty_state
     state_library.save_state(state)
+    txs=load_transactions()
+    reset_transactions()
     for i in chain:
         if i['length']>=0:
             chain_push(i)
-    if len(chain)>len(load_chain()):
-        print('chain: ' + str(chain))
-        print('lchain: ' + str(load_chain()))
-#        error('here')
+    add_transactions(orphaned_txs)
+    add_transactions(txs)
 def package(dic):
     return json.dumps(dic).encode('hex')
 def unpackage(dic):
@@ -115,12 +122,15 @@ def difficulty(bitcoin_count, leng):
     return out
 def blockhash(chain_length, nonce, state, transactions, bitcoin_hash):
     fixed_transactions=[]
+    if len(transactions)==0:
+        error('here')
     for i in transactions:
         new=''
         for key in sorted(i.keys()):
             new=new+str(key)+':'+str(i[key])+','
         fixed_transactions.append(new)
-    return {'hash':pt.sha256(str(chain_length)+str(nonce)+str(state['recent_hash'])+str(sorted(fixed_transactions))+str(bitcoin_hash)), 'exact':str(chain_length)+str(nonce)+str(state['recent_hash'])+str(sorted(fixed_transactions))+str(bitcoin_hash)}
+    exact=str(chain_length)+str(nonce)+str(state['recent_hash'])+str(sorted(fixed_transactions))+str(bitcoin_hash)
+    return {'hash':pt.sha256(exact), 'exact':exact}
 def reverse(l):
     out=[]
     while l != []:
@@ -137,14 +147,16 @@ def new_block_check(block, state):
     if not ver['bool']:
 #        print('44')
         return False
+#    print('new_ block: ' +str(block))
     if f('sha') != blockhash(f('length'), f('nonce'), state, block['transactions'], f('bitcoin_hash'))['hash']:
+        print('blockhash: ' +str(blockhash(f('length'), f('nonce'), state, block['transactions'], f('bitcoin_hash'))))
         print('block invalid because blockhash was computed incorrectly')
 #        error('here')
         return False
     elif f('sha')>diff:
         print('block invalid because blockhash is not of sufficient difficulty')
-        print(f('sha'))
-        print('difficulty: ' +str(diff))
+#        print(f('sha'))
+#        print('difficulty: ' +str(diff))
         return False
     elif f('bitcoin_hash')!=bitcoin.getblockhash(int(f('bitcoin_count'))):
         print('block invalid because it does not contain the correct bitcoin hash')
@@ -160,72 +172,100 @@ def verify_count(tx, state):
         print("invalid because we need each tx to have a count")
         return False
     if 'count' in tx and tx['count']!=state[tx['id']]['count']:
-        print('tx: ' +str(tx))
-        print('state: ' +str(state[tx['id']]['count']))
-        print("#invalid because te count did not increment form last time.")
+#        print('tx: ' +str(tx))
+#        print('state: ' +str(state[tx['id']]['count']))
+#        print("#invalid because te count did not increment form last time.")
         return False
     return True
 
 def verify_transactions(txs, state):
-#transactions can only get verified with respect to a state, and you can only verify them as a group which is to be contained in a block together.
     txs=copy.deepcopy(txs)
+    length=len(txs)
     state=copy.deepcopy(state)
-    already_seen=[]
-    txs=sorted(txs, key=lambda x: x['count'])
-    for txx in txs:
-        tx=copy.deepcopy(txx)
-	code=message2signObject(tx,tx.keys())
-        if code in already_seen:
-            print('invalid because no repeats.')
-            return {'bool':False}
-        already_seen.append(code)
-        if not verify_count(tx, state):
-            print("invalid because the tx['count'] was wrong")
-            return {'bool':False}
-        state[tx['id']]['count']+=1#th
-        types=['spend', 'mint', 'nextTurn', 'newGame']
-        if tx['type'] not in types: 
-            print("invalid because tx['type'] was wrong")
-            return {'bool':False}
-        if tx['type']=='mint':
-            if not mint_check(tx, state):
-                return {'bool':False}
-            if 'amount' not in state[tx['id']].keys():
-                state[tx['id']]['amount']=0
-            state[tx['id']]['amount']+=tx['amount']
-        if tx['type']=='spend':
-            if not spend_check(tx, state):
-                return {'bool':False}
-            state[tx['id']]['amount']-=tx['amount']
-            if tx['pubkey'] not in state:
-                state[tx['pubkey']]={'amount':0}
-            state[tx['pubkey']]['amount']+=tx['amount']
-        if tx['type']=='nextTurn':
-            if not go.nextTurnCheck(tx, state):
-                return {'bool':False}
-            state[tx['game_name']]=go.next_board(state[tx['game_name']], tx['where'])
-        if tx['type']=='newGame':
-#            print("state"+str(state))
-            if not go.newGameCheck(tx, state):
-                return {'bool':False}
-#            print('tx: ' +str(tx))
-            state[tx['game_name']]=go.new_game(tx)
-    return {'bool':True, 'newstate':state}
-
+    remove_list=[]
+    for i in txs:
+        (state, booll) = attempt_absorb(i, state)
+        if booll:
+            remove_list.append(i)
+    for i in remove_list:
+        txs.remove(i)
+    if len(txs)>=length:
+        return {'bool':False}
+    if len(txs)==0:
+        return {'bool':True, 'newstate':state}
+    else:
+        return verify_transactions(txs, state)
+def attempt_absorb(tx, state):
+    state=copy.deepcopy(state)
+    state_orig=copy.deepcopy(state)
+    if not verify_count(tx, state):
+ #       print("invalid because the tx['count'] was wrong")
+        return (state, False)
+    state[tx['id']]['count']+=1
+    types=['spend', 'mint', 'nextTurn', 'newGame', 'winGame']
+    if tx['type'] not in types: 
+        print('tx: ' +str(tx))
+        print("invalid because tx['type'] was wrong")
+        return (state_orig, False)
+    if tx['type']=='mint':
+        if not mint_check(tx, state):
+            return (state_orig, False)
+        if 'amount' not in state[tx['id']].keys():
+            state[tx['id']]['amount']=0
+        state[tx['id']]['amount']+=tx['amount']
+    if tx['type']=='spend':
+        if not spend_check(tx, state):
+            return (state_orig, False)
+        state[tx['id']]['amount']-=tx['amount']
+        if tx['pubkey'] not in state:
+            state[tx['pubkey']]={'amount':0}
+        state[tx['pubkey']]['amount']+=tx['amount']
+    if tx['type']=='nextTurn':
+        if not go.nextTurnCheck(tx, state):
+            return (state_orig, False)
+        state[tx['game_name']]=go.next_board(state[tx['game_name']], tx['where'], state['length'])
+    print('tx: ' +str(tx))
+    if tx['type']=='newGame':
+        if not go.newGameCheck(tx, state) or not spend_check_1(tx, state):
+            print('FAILED NEW GAME CHECK')
+            return (state_orig, False)
+        state[tx['game_name']]=go.new_game(copy.deepcopy(tx))
+        pubkey_black=state[tx['game_name']]['pubkey_black']        
+        print('state: ' +str(state))
+        state[pubkey_black]['amount']-=250000#1/4 of mining reward
+	if tx['amount']>0:
+            state[pubkey_black]['amount']-=tx['amount']
+            state[pubkey_white]['amount']-=tx['amount']
+    print('tx: ' +str(tx))
+    if tx['type']=='winGame':
+        if not go.winGameCheck(tx, state):
+            print('FAILED WIN GAME CHECK')
+            return (state_orig, False)
+        state[tx['pubkey']]['amount']+=250000
+        print('tx: ' +str(tx))
+        a=state[tx['game_name']]['amount']
+        if a>0:
+            state[tx['id']]['amount']+=a*2
+        state.pop(tx['game_name'])
+    return (state, True)
 def mint_check(tx, state):
     if tx['amount']>10**5:
         return False#you can only mint up to 10**5 coins per block
     return True
-
-def spend_check(tx, state):
+def spend_check_1(tx, state):
     if tx['id'] not in state.keys():
         print("you can't spend money from a non-existant account")
         return False
-    if tx['amount']>=state[tx['id']]['amount']:
+    print('tx: ' +str(tx))
+    if tx['amount']>0 and tx['amount']>state[tx['id']]['amount']:
         print("you don't have that much money to spend")
         return False
     if 'signature' not in tx:
         print("spend transactions must be signed")
+        return False
+    return True
+def spend_check(tx, state):
+    if not spend_check_1(tx, state):
         return False
     signed_properties=['type','pubkey','amount', 'count']
     if not pt.ecdsa_verify(message2signObject(tx, ['type','pubkey','amount', 'count']), tx['signature'], tx['id'] ):
@@ -246,8 +286,6 @@ def send_command(peer, command):
         return unpackage(out)
     except:
         return out
-
-
 '''
 def send_command(peer, command):
     try:
@@ -282,19 +320,11 @@ def mine_1(reward_pubkey):
                 extra+=1
         count=state[reward_pubkey]['count']+extra
         transactions.append({'type':'mint', 'amount':10**5, 'id':reward_pubkey, 'count':count})
-        try:
-#            state=verify_transactions(transactions, state)['newstate']
-            pass
-        except:
-            print('transactions: ' +str(transactions))
-            print('state: ' +str(state))
-            error('here')
         length=state['length']
         sha=blockhash(length, nonce, state, transactions, bitcoin_hash)
     block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'exact':sha['exact'], 'prev_sha':state['recent_hash']}
     print('new link: ' +str(block))
     chain_push(block)
-    
 def mine(reward_pubkey, peers):
     while True:
         peer_check_all(peers)
@@ -304,7 +334,6 @@ def fork_check(newblocks, state):#while we are mining on a forked chain, this ch
 #        hashes=filter(lambda x: 'prev_sha' in x and x['prev_sha']==state['recent_hash'], newblocks)
         hashes=filter(lambda x: 'sha' in x and x['sha']==state['recent_hash'], newblocks)
     except:
-#        print('state: ' +str(state))
         error('here')
     return len(hashes)==0
 
@@ -313,8 +342,6 @@ def peer_check_all(peers):
     for peer in peers:
         blocks+=peer_check(peer)
     for block in blocks:
-#        print('block: ' +str(block))
-#       error('hrer')
         chain_push(block)
 
 def peer_check(peer):
@@ -331,11 +358,10 @@ def peer_check(peer):
     if ahead == 0:#if we are on the same block, ask for any new txs
         if state['recent_hash']!=block_count['recent_hash']:
             chain_unpush()
-            print('peer_check 3')
+            print('WE WERE ON A FORK. time to back up.')
             return []
         txs=cmd({'type':'transactions'})
-        for tx in txs:
-            add_transaction(tx)#skips bad transactions
+        add_transactions(txs)
         return []
     start=int(state['length'])-20
     if start<0:
@@ -353,4 +379,3 @@ def peer_check(peer):
         times-=1
         chain_unpush()
     return blocks
-

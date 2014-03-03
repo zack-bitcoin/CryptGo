@@ -8,35 +8,45 @@ import pybitcointools as pt
 #pubkey=pt.privtopub(privkey)
 #state=state_library.current_state()
 #my_count=state[pubkey]['count']
-def spend(amount, pubkey):
-    state=state_library.current_state()
-    my_count=state[pubkey]['count']
-#    tx={'type':'spend', 'id':pubkey, 'amount':2, 'count':my_count, 'pubkey':'0424823507306d62690158d76a55c060a5c36e51a6ae569681aee69291d09e4bed942e41fb8574f80e3b55a0dc8605a62223a1102e83210200593ba84c7b2eb677'}  
-    tx={'type':'spend', 'id':pubkey, 'amount':amount, 'count':my_count, 'pubkey':pubkey}
-    tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx,['type','pubkey', 'amount', 'count']), privkey)
-    print(blockchain.add_transaction(tx))
-def newgame(opponent, name, pubkey_mine, privkey, size=19):
-    state=state_library.current_state()
-    if pubkey_mine not in state or 'count' not in state[pubkey_mine]:
-        my_count=1
-    else:
-        my_count=state[pubkey_mine]['count']
-    tx={'type':'newGame', 'id':pubkey_mine, 'game_name':name, 'pubkey_white':pubkey_mine, 'count':my_count, 'pubkey_black':opponent, 'whos_turn':'white', 'time':0, 'white':[], 'black':[], 'size':size}
-    tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, go.newgame_sig_list), privkey)
-    print(blockchain.add_transaction(tx))
-    return name
-def move(game_name, location, pubkey, privkey):#this function is way wrong
+spend_list=['type','pubkey', 'amount', 'count']
+win_list=['game_name', 'id']
+def spend(amount, pubkey, to_pubkey):
+    tx={'type':'spend', 'id':pubkey, 'amount':amount, 'to':to_pubkey}
+    easy_add_transaction(tx, spend_list, privkey)
+def wingame(game_name, pubkey, privkey):
+    tx={'type':'winGame', 'game_name':game_name, 'id':pubkey}
+    easy_add_transaction(tx, win_list, privkey)
+def newgame(opponent, name, pubkey_mine, privkey, size=19, amount=0):
+    amount=int(amount)
+    print('NEWGAME')
+    tx={'type':'newGame', 'game_name':name, 'id':pubkey_mine, 'pubkey_white':opponent, 'pubkey_black':pubkey_mine, 'whos_turn':'black', 'time':5, 'white':[], 'black':[], 'size':size, 'amount':amount}
+    easy_add_transaction(tx, go.newgame_sig_list, privkey)
+def move(game_name, location, pubkey, privkey):
     state=state_library.current_state()
     board=state[game_name]
-#    print('state: ' +str(state))
-    if pubkey not in state:
-        state[pubkey]={'count':1}
-    if 'count' not in state[pubkey]:
-        state[pubkey]['count']=1
-    my_count=state[pubkey]['count']
-    tx={'type':'nextTurn', 'id':pubkey, 'game_name':game_name, 'count':my_count, 'where':location, 'move_number':board['move_number']}
-    tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, go.nextturn_sig_list), privkey)
+    print('location: ' +str(location))
+    txs=blockchain.load_transactions()
+    game_txs=filter(lambda x: x['game_name']==game_name, txs)
+    tx_orig={'type':'nextTurn', 'id':pubkey, 'game_name':game_name, 'where':location, 'move_number':board['move_number']+len(game_txs)}
+    easy_add_transaction(tx_orig, go.nextturn_sig_list, privkey)
+def easy_add_transaction(tx_orig, sign_over, privkey):
+    state=state_library.current_state()
+    pubkey=pt.privtopub(privkey)
+    if pubkey not in state or 'count' not in state[pubkey]:
+        my_count=1
+    else:
+        my_count=state[pubkey]['count']
+    txs=blockchain.load_transactions()
+    my_txs=filter(lambda x: x['id']==pubkey, txs)
+    tx=copy.deepcopy(tx_orig)
+    tx['count']=len(my_txs)+my_count
+    tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, sign_over), privkey)
     print(blockchain.add_transaction(tx))
+    if 'move_number' in tx:
+        for i in range(10):
+            tx['move_number']+=1
+            tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, sign_over), privkey)
+            print(blockchain.add_transaction(tx))
 def fs2dic(fs):
     dic={}
     for i in fs.keys():
@@ -59,28 +69,70 @@ def easyForm(link, button_says, moreHtml='', typee='post'):
     else:
         return a.format('post', '{}')
 linkHome = easyForm('/', 'HOME', '', 'get')
+
+def dot_spot(s, i, j):
+    sp=[3,9,15]
+    if s==19 and i in sp and j in sp:
+        return True
+    sp=[2,6]
+    if s==9 and i in sp and j in sp:
+        return True
+    sp=[2,10]
+    if s==13 and ((i in sp and j in sp) or (j==6 and i==6)):
+        return True
+def board_spot(j, i, moves_played, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, white_txs, black_txs, privkey):
+    s=board['size']
+    out='{}'
+    if [j, i] in board['white']:
+        out=out.format(hex2htmlPicture(white_txt))
+    elif [j, i] in white_txs:
+        out=out.format(hex2htmlPicture(half_white_txt))
+    elif [j, i] in board['black']:
+        out=out.format(hex2htmlPicture(black_txt))
+    elif [j, i] in black_txs:
+        out=out.format(hex2htmlPicture(half_black_txt))
+    else:
+        img=empty_txt
+        if dot_spot(s, i, j):
+            img=dot_txt
+        if True:
+            out=out.format('''<form style='display:inline;\n margin:0;\n padding:0;' name="play_a_move" action="/home" method="POST"><input type="image" src="{}" name="move" height="{}"><input type="hidden" name="move" value="{},{}"><input type="hidden" name="game" value="{}"><input type="hidden" name="privkey" value="{}"></form>{}'''.format(txt2src(img), str(piece_size), str(j), str(i), board['game_name'], privkey,'{}'))
+        else:
+            out=out.format(hex2htmlPicture(img))
+    return out
+    
 def board(out, board, privkey):
     s=board['size']
+    transactions=blockchain.load_transactions()
+    transactions=filter(lambda x: x['game_name']==board['game_name'], transactions)
+    black_tx=filter(lambda x: x['id']==board['pubkey_black'], transactions)
+    white_tx=filter(lambda x: x['id']==board['pubkey_white'], transactions)
+    black_txs=[]
+    white_txs=[]
+    print('black: ' +str(black_tx))
+    for i in black_tx:
+        if 'where' in i:
+            black_txs.append(i['where'])
+        else:
+            out=out.format('<p>You are attempting to win this game</p>{}')
+    for i in white_tx:
+        if 'where' in i:
+            white_txs.append(i['where'])
+        else:
+            out=out.format('<p>You are attempting to win this game</p>{}')
+    pubkey=pt.privtopub(privkey)
+    if board['whos_turn']=='white':
+        whos_turn_pubkey=board['pubkey_white']
+        not_whos_turn_pubkey=board['pubkey_black']
+        moves_played=white_txs
+    else:
+        whos_turn_pubkey=board['pubkey_black']
+        not_whos_turn_pubkey=board['pubkey_white']
+        moves_played=black_txs
     for j in range(s):
         out=out.format('<br>{}')
         for i in range(s):
-            if [j, i] in board['white']:
-                out=out.format(white)
-            elif [j, i] in board['black']:
-                out=out.format(black)
-            else:
-                img=empty_txt
-                sp=[3,9,15]
-                if s==19 and i in sp and j in sp:
-                    img=dot_txt
-                sp=[2,6]
-                if s==9 and i in sp and j in sp:
-                    img=dot_txt
-                sp=[2,10]
-                if s==13 and ((i in sp and j in sp) or (j==6 and i==6)):
-                    img=dot_txt
-                out=out.format('''<form style='display:inline;\n margin:0;\n padding:0;' name="play_a_move" action="/home" method="POST"><input type="image" src="{}" name="move" height="{}"><input type="hidden" name="move" value="{},{}"><input type="hidden" name="game" value="{}"><input type="hidden" name="privkey" value="{}"></form>{}'''.format(txt2src(img), str(piece_size), str(j), str(i), board['game_name'], privkey,'{}'))
-#                    out=out.format(empty)
+            out=out.format(board_spot(j, i, moves_played, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, white_txs, black_txs, privkey))
     return out
 def page1():
     out=empty_page
@@ -96,10 +148,12 @@ def home(dic):
     if 'do' in dic.keys():
         if dic['do']=='newGame':
             try:
-                a=newgame(dic['partner'], dic['game'], pubkey, privkey, int(dic['size']))
+                a=newgame(dic['partner'], dic['game'], pubkey, privkey, int(dic['size']), dic['amount'])
             except:
-                a=newgame(dic['partner'], dic['game'], pubkey, privkey)
-            active_games.append(a)
+                a=newgame(dic['partner'], dic['game'], pubkey, privkey, 19, dic['amount'])
+            active_games.append(dic['game'])
+        if dic['do']=='winGame':
+            wingame(dic['game'], pubkey, privkey)
         if dic['do']=='joinGame':
             active_games.append(dic['game'])
         if dic['do']=='deleteGame':
@@ -113,11 +167,22 @@ def home(dic):
     out=empty_page
     out=out.format('<p>your address is: ' +str(pubkey)+'</p>{}')
     state=state_library.current_state()
+    out=out.format('<p>current block is: ' +str(state['length'])+'</p>{}')
+    if pubkey not in state:
+        state[pubkey]={'amount':0}
+    if 'amount' not in state[pubkey]:
+        state[pubkey]['amount']=0
+    out=out.format('<p>current balance is: ' +str(state[pubkey]['amount']/100000.0)+'</p>{}')        
     for game in active_games:
         out=out.format("<h1>"+str(game)+"</h1>{}")
-        print('state: ' +str(state))
+        if game in state:
+            out=out.format('<h1>Timer: ' + str(state[game]['last_move_time']+state[game]['time']-state['length'])+' </h1>{}')
         if game in state.keys():
             out=board(out, state[game], privkey)
+            out=out.format(easyForm('/home', 'win this game', '''
+            <input type="hidden" name="do" value="winGame">
+            <input type="hidden" name="privkey" value="{}">
+            <input type="hidden" name="game"  value="{}">'''.format(privkey, game)))
             out=out.format(easyForm('/home', 'leave this game', '''
             <input type="hidden" name="do" value="deleteGame">
             <input type="hidden" name="privkey" value="{}">
@@ -142,8 +207,9 @@ def home(dic):
     <input type="text" name="game" value="unique game name">
     <input type="text" name="partner" value="put your partners address here.">
     <input type="text" name="size" value="board size (9, 13, 19 are popular)">
+    <input type="text" name="amount" value="0">
     '''.format(privkey)))
-    return out.format('')
+    return out
 def hex2htmlPicture(string):
     return '<img height="{}" src="data:image/png;base64,{}">{}'.format(str(piece_size), string, '{}')
 #def file2hexPicture(fil):
@@ -162,12 +228,16 @@ dot_txt="iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpw
 white_txt="iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gITDyM1P8qIkQAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAABASURBVAjXY/S448HAwMDAwLBdeTuE4XnXE8Jg8Ljj8R8b8LjjwcSAGzD+//8flxw+fXjlEK5CBZ53PfG6BY//ALQ0JoSAn9HtAAAAAElFTkSuQmCC"
 empty_txt="iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gITDyIL57CkewAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAfSURBVAjXY/S448EAAztUdiBzmRhwA3Ll8AFGOrsFAO/zCOeJq9qTAAAAAElFTkSuQmCC"
 black_txt="iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gITDyMEbhSIqwAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAApSURBVAjXY/S448HAwMDAwLBDZQeEARdBYqECjzseTAx0BmS6hRGP/wCVjQ6PyfnLuwAAAABJRU5ErkJggg=="
+half_black_txt='iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gMCFQAdcKJo5gAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAABbSURBVAjXY/S448HAwMDAwLBn6p4//X9YCllcsl0gIiwQUQYkAOG6ZLswMeAGzA+YH8A5/078Y7KEqr53+h4ebQyMLIUscA7ELXAuE9xVaICAW1ggSpB9AjcJAJjWHSoSD4gAAAAAAElFTkSuQmCC'
+half_white_txt='iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gMCFDo4H80I7wAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAABTSURBVAjXY/S448HAwMDAwBAiG/Jj4Q+OeI41j9dARFggogxIAMJd83gNEwNuwISmCVk3y4+FP5CFkLksHPEcyBLIXCa4q9AAAbewQJQg+wRuEgBisR8X0r+9ngAAAABJRU5ErkJggg=='
 def txt2src(txt):
     return "data:image/png;base64,"+txt
-white=hex2htmlPicture(white_txt)
+#white=hex2htmlPicture(white_txt)
 dot=hex2htmlPicture(dot_txt)
 empty=hex2htmlPicture(empty_txt)
 black=hex2htmlPicture(black_txt)
+half_white=hex2htmlPicture(half_white_txt)
+half_black=hex2htmlPicture(half_black_txt)
 def fs_load():
     try:
         out=pickle.load(open(database, 'rb'))
