@@ -1,5 +1,6 @@
 import cPickle
 state_db='state.db'
+backup_db='backup_states.db'
 empty_state={'length':0, 'recent_hash':'00000000000'}
 def fs_save(database, dic):
     cPickle.dump(dic, open(database, 'wb'))
@@ -18,3 +19,14 @@ def current_state(key=''):#lets make this grab current state from a file, instea
     if key!='' and key not in current:
         current[key]={'count':1, 'amount':0}
     return current
+def backup_state(state):
+    backups=fs_load(backup_db, {})
+    backups[str(state['length'])]=state
+    fs_save(backup_db, backups)
+def recent_backup():
+    backups=fs_load(backup_db, {})
+    num=0
+    for i in backups.keys():
+        if int(i)>num:
+            num=int(i)
+    return backups[str(num)]

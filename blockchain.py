@@ -72,6 +72,8 @@ def chain_push(block):
         state['length']+=1
         state['recent_hash']=block['sha']
         state_library.save_state(state)
+        if block['length']%10==0:
+            state_library.backup_state(state)
         txs=load_transactions()
         reset_transactions()
         add_transactions(txs)
@@ -79,18 +81,31 @@ def chain_push(block):
     else:
         print('FAILED TESTS')
         return 'bad'
+def shorten_chain_db(new_length):
+    f=open(chain_db, 'r')
+    lines = f.readlines()
+    f.close()
+    f = open(chain_db,"w")
+    i=0
+    for line in lines:
+        i+=1
+        if i>new_length:
+            f.close()
+            return
+        f.write(line)
 def chain_unpush():
     chain=load_chain()
     orphaned_txs=[]
     if 'transactions' in chain[0]:
         orphaned_txs=chain[-1]['transactions']
     chain=chain[:-1]
-    reset_chain()
-    state=state_library.empty_state
+    #reset_chain() instead, just back up to the nearest save.
+    state=state_library.recent_backup()
+    shorten_chain_db(state['length'])
     state_library.save_state(state)
     txs=load_transactions()
     reset_transactions()
-    for i in chain:
+    for i in chain[-100:]:
         chain_push(i)
     add_transactions(orphaned_txs)
     add_transactions(txs)
