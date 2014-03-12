@@ -1,6 +1,8 @@
 ======INSTALL======
 You need these 3rd party programs:
 http://www.python.org/download/
+
+These programs should be included in the install file, so you probably don't have to download them. here are their websites:
 http://json-rpc.org/wiki/python-json-rpc (which may require http://bazaar.canonical.com/en/ )
 https://github.com/vbuterin/pybitcointools
 
