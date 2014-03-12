@@ -15,7 +15,8 @@ chain_db='chain.db'
 transactions_database='transactions.db'
 
 #I call my database appendDB because this type of database is very fast to append data to.
-
+def line2dic(line):
+    return json.loads(line.strip('\n'))
 def load_appendDB(file):
     out=[]
     try:
@@ -23,7 +24,7 @@ def load_appendDB(file):
             a=myfile.readlines()
             for i in a:
                 if i.__contains__('"'):
-                    out.append(json.loads(i.strip('\n')))
+                    out.append(line2dic(i))
     except:
         pass
     return out
@@ -88,11 +89,10 @@ def shorten_chain_db(new_length):
     f = open(chain_db,"w")
     i=0
     for line in lines:
-        i+=1
-        if i>new_length:
-            f.close()
-            return
-        f.write(line)
+        a=line2dic(line)
+        if a['length']<new_length:
+            f.write(line)
+    f.close()
 def chain_unpush():
     chain=load_chain()
     orphaned_txs=[]
@@ -360,6 +360,7 @@ def spend_check(tx, state):
 def send_command(peer, command):
 #    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
     url=peer.format(package(command))
+    print('in send command')
     if 'onion' in url:
         try:
             print('trying privoxy method')
@@ -373,6 +374,7 @@ def send_command(peer, command):
             out={'error':'cannot connect to peer'}
     else:
         try:
+            print('attempt to open: ' +str(url))
             URL=urllib.urlopen(url)
             out=URL.read()
         except:
@@ -454,9 +456,11 @@ def pushblock(block, peers):
         send_command(p, {'type':'pushblock', 'block':block})    
 
 def peer_check(peer):
+    print('checking peer')
     state=state_library.current_state()
     cmd=(lambda x: send_command(peer, x))
     block_count=cmd({'type':'blockCount'})
+    print('block count: ' +str(block_count))
     if type(block_count)!=type({'a':1}):
         return []
     if 'error' in block_count.keys():
