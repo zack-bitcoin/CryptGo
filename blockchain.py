@@ -1,4 +1,4 @@
-import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2
+import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time
 import pybitcointools as pt
 import state_library
 try:
@@ -6,15 +6,16 @@ try:
 except:
     from bitcoinrpc import AuthServiceProxy as ServiceProxy       
 #bitcoin = ServiceProxy("http://user:HkTlSzJkY7@127.0.0.1:8332/")
-bitcoin=ServiceProxy("http://:hfjkdahflkjsdfa@127.0.0.1:8331/")#actually litecoin
+#bitcoin=ServiceProxy("http://:hfjkdahflkjsdfa@127.0.0.1:8331/")#actually litecoin
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=524158-1220
+genesisbitcoin=289902-1224#1220
 #genesisbitcoin=516070#lazy, only wait 6 seconds per block.
 chain=[genesis]
 chain_db='chain.db'
 transactions_database='transactions.db'
 
 #I call my database appendDB because this type of database is very fast to append data to.
+
 def load_appendDB(file):
     out=[]
     try:
@@ -63,7 +64,9 @@ def add_transaction(tx):#to local pool
     return False
 def chain_push(block):
     statee=state_library.current_state()    
+    print('CHAIN PUSH')
     if new_block_check(block, statee):
+        print('PASSED TESTS')
         state=verify_transactions(block['transactions'], statee)
         state=state['newstate']
         state['length']+=1
@@ -74,12 +77,13 @@ def chain_push(block):
         add_transactions(txs)
         return push_appendDB(chain_db, block)
     else:
+        print('FAILED TESTS')
         return 'bad'
 def chain_unpush():
     chain=load_chain()
     orphaned_txs=[]
     if 'transactions' in chain[0]:
-        orphaned_txs=chain[0]['transactions']
+        orphaned_txs=chain[-1]['transactions']
     chain=chain[:-1]
     reset_chain()
     state=state_library.empty_state
@@ -87,17 +91,53 @@ def chain_unpush():
     txs=load_transactions()
     reset_transactions()
     for i in chain:
-        if i['length']>=0:
-            chain_push(i)
+        chain_push(i)
     add_transactions(orphaned_txs)
     add_transactions(txs)
+count_value=0
+count_timer=time.time()-60
+def getblockcount():
+    global count_value
+    if time.time()-count_timer<60:
+        return count_value
+    try:
+        peer='http://blockexplorer.com/q/getblockcount'
+        URL=urllib.urlopen(peer)
+        URL=URL.read()
+        count_value=int(URL)
+    except:
+        peer='http://blockchain.info/q/getblockcount'
+        URL=urllib.urlopen(peer)
+        URL=URL.read()
+        count_value=int(URL)
+    return count_value
+hash_dic={}
+def getblockhash(count):
+    global hash_dic
+    if str(count) in hash_dic:
+        return hash_dic[str(count)]
+    try:
+        peer='http://blockexplorer.com/q/getblockhash/'+str(count)
+        URL=urllib.urlopen(peer)
+        URL=URL.read()
+        int(URL, 16)
+        hash_dic[str(count)]=URL
+        return URL
+    except:
+        peer='http://blockchain.info/q/getblockhash/'+str(count)
+        URL=urllib.urlopen(peer)
+        URL=URL.read()
+        int(URL, 16)
+        hash_dic[str(count)]=URL
+        return URL
+
 def package(dic):
     return json.dumps(dic).encode('hex')
 def unpackage(dic):
     try:
         return json.loads(dic.decode('hex'))
     except:
-        print(dic)
+#        print('in unpackage: '+str(dic))
         error('here')
 def message2signObject(tx, keys):
     out=''
@@ -115,9 +155,12 @@ def difficulty(bitcoin_count, leng):
         while len(s)<n:
             s='0'+s
         return s
-#    hashes_required=int((10**60)*((2.0/3)**(float(bitcoin_count)-float(genesisbitcoin)-(float(leng)/10)))+1)#for bitcoin
-    hashes_required=int((10**60)*((9.0/10)**(float(bitcoin_count)-float(genesisbitcoin)-(float(leng)/2.5)))+1)#for litcoin
+    try:
+        hashes_required=int((10**60)*((9.0/10)**(float(bitcoin_count)-float(genesisbitcoin)-(float(leng)/10)))+1)#for bitcoin
+#    hashes_required=int((10**60)*((9.0/10)**(float(bitcoin_count)-float(genesisbitcoin)-(float(leng)/2.5)))+1)#for litcoin
 #    hashes_required=int((10**60)*((9.0/10)**(float(bitcoin_count)-float(genesisbitcoin)-(float(leng)/25)))+1)#for laziness, every 6 seconds??
+    except:
+        hashes_required=999999999999999999999999999999999999999999999999999999999999
     out=buffer(hex(int('f'*64, 16)/hashes_required)[2:], 64)
     return out
 def blockhash(chain_length, nonce, state, transactions, bitcoin_hash):
@@ -130,7 +173,8 @@ def blockhash(chain_length, nonce, state, transactions, bitcoin_hash):
             new=new+str(key)+':'+str(i[key])+','
         fixed_transactions.append(new)
     exact=str(chain_length)+str(nonce)+str(state['recent_hash'])+str(sorted(fixed_transactions))+str(bitcoin_hash)
-    return {'hash':pt.sha256(exact), 'exact':exact}
+#    return {'hash':pt.sha256(exact), 'exact':exact}
+    return {'hash':pt.sha256(exact)}
 def reverse(l):
     out=[]
     while l != []:
@@ -141,11 +185,12 @@ def new_block_check(block, state):
     def f(x):
         return str(block[x])
     if 'length' not in block or 'bitcoin_count' not in block or 'transactions' not in block:
+        print('ERRROR !')
         return False
     diff=difficulty(f('bitcoin_count'), f('length'))
     ver=verify_transactions(block['transactions'], state)
     if not ver['bool']:
-#        print('44')
+        print('44')
         return False
 #    print('new_ block: ' +str(block))
     if f('sha') != blockhash(f('length'), f('nonce'), state, block['transactions'], f('bitcoin_hash'))['hash']:
@@ -153,12 +198,18 @@ def new_block_check(block, state):
         print('block invalid because blockhash was computed incorrectly')
 #        error('here')
         return False
+    a=getblockcount()
+    if int(f('bitcoin_count'))>int(a):
+        print('website: ' + str(type(a)))
+        print('f: ' +str(type(f('bitcoin_count'))))
+        print('COUNT ERROR')
+        return False
     elif f('sha')>diff:
         print('block invalid because blockhash is not of sufficient difficulty')
 #        print(f('sha'))
 #        print('difficulty: ' +str(diff))
         return False
-    elif f('bitcoin_hash')!=bitcoin.getblockhash(int(f('bitcoin_count'))):
+    elif f('bitcoin_hash')!=getblockhash(int(f('bitcoin_count'))):
         print('block invalid because it does not contain the correct bitcoin hash')
         return False
     elif f('prev_sha')!=state['recent_hash']:
@@ -166,11 +217,17 @@ def new_block_check(block, state):
         return False
     return True
 def verify_count(tx, state):
+    if 'id' not in tx:
+        print('bad input error in verify count')
+        error('here')
+        return False
     if tx['id'] not in state.keys():
         state[tx['id']]={'count':1}
     if 'count' not in tx:
         print("invalid because we need each tx to have a count")
         return False
+    if 'count' not in state[tx['id']]:
+        state[tx['id']]['count']=1
     if 'count' in tx and tx['count']!=state[tx['id']]['count']:
 #        print('tx: ' +str(tx))
 #        print('state: ' +str(state[tx['id']]['count']))
@@ -180,6 +237,7 @@ def verify_count(tx, state):
 
 def verify_transactions(txs, state):
     txs=copy.deepcopy(txs)
+    print('txs: ' +str(txs))
     length=len(txs)
     state=copy.deepcopy(state)
     remove_list=[]
@@ -190,6 +248,8 @@ def verify_transactions(txs, state):
     for i in remove_list:
         txs.remove(i)
     if len(txs)>=length:
+        print('HERE')
+        print(txs)
         return {'bool':False}
     if len(txs)==0:
         return {'bool':True, 'newstate':state}
@@ -224,25 +284,35 @@ def attempt_absorb(tx, state):
         if not go.nextTurnCheck(tx, state):
             return (state_orig, False)
         state[tx['game_name']]=go.next_board(state[tx['game_name']], tx['where'], state['length'])
-    print('tx: ' +str(tx))
+
+#    print('tx: ' +str(tx))
     if tx['type']=='newGame':
+        if state[tx['id']]['amount']<=250000:
+            return (state_orig, False)
         if not go.newGameCheck(tx, state) or not spend_check_1(tx, state):
             print('FAILED NEW GAME CHECK')
             return (state_orig, False)
         state[tx['game_name']]=go.new_game(copy.deepcopy(tx))
         pubkey_black=state[tx['game_name']]['pubkey_black']        
         print('state: ' +str(state))
+        if pubkey_black not in state:
+            print('newgame error 1')
+            return (state_orig, False)
+        if 'amount' not in state[pubkey_black]:
+            print('not enough money failure')
+            return (state_orig, False)
         state[pubkey_black]['amount']-=250000#1/4 of mining reward
 	if tx['amount']>0:
             state[pubkey_black]['amount']-=tx['amount']
             state[pubkey_white]['amount']-=tx['amount']
-    print('tx: ' +str(tx))
+#    print('tx: ' +str(tx))
     if tx['type']=='winGame':
         if not go.winGameCheck(tx, state):
             print('FAILED WIN GAME CHECK')
             return (state_orig, False)
-        state[tx['pubkey']]['amount']+=250000
-        print('tx: ' +str(tx))
+        pubkey_black=state[tx['game_name']]['pubkey_black']
+        state[pubkey_black]['amount']+=250000
+#        print('tx: ' +str(tx))
         a=state[tx['game_name']]['amount']
         if a>0:
             state[tx['id']]['amount']+=a*2
@@ -256,7 +326,7 @@ def spend_check_1(tx, state):
     if tx['id'] not in state.keys():
         print("you can't spend money from a non-existant account")
         return False
-    print('tx: ' +str(tx))
+#    print('tx: ' +str(tx))
     if tx['amount']>0 and tx['amount']>state[tx['id']]['amount']:
         print("you don't have that much money to spend")
         return False
@@ -273,15 +343,26 @@ def spend_check(tx, state):
         return False
     return True
 def send_command(peer, command):
-    proxy_support = urllib2.ProxyHandler({"http" : "127.0.0.1:8118"})
-    opener = urllib2.build_opener(proxy_support) 
 #    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
     url=peer.format(package(command))
-    try:
-        out=opener.open(url)
-        out=out.read()
-    except:
-        out={'error':'cannot connect to peer'}
+    if 'onion' in url:
+        try:
+            print('trying privoxy method')
+            proxy_support = urllib2.ProxyHandler({"http" : "127.0.0.1:8118"})
+            opener = urllib2.build_opener(proxy_support) 
+            out=opener.open(url)
+            out=out.read()
+            print('privoxy succeeded')
+        except:
+            print('url: ' +str(url))
+            out={'error':'cannot connect to peer'}
+    else:
+        try:
+            URL=urllib.urlopen(url)
+            out=URL.read()
+        except:
+            print('url: ' +str(url))
+            out={'error':'cannot connect to peer'}
     try:
         return unpackage(out)
     except:
@@ -298,18 +379,21 @@ def send_command(peer, command):
     except:
         return URL
 '''
-def mine_1(reward_pubkey):
+def mine_1(reward_pubkey, peers):
     sha={'hash':100}
     diff=0
-    hashes_limit=1000
+    hashes_limit=60
     hash_count=0
+    print('start mining ' +str(hashes_limit)+ ' times')
     while sha['hash']>diff:
+#        print(str(hash_count))
         hash_count+=1
         if hash_count>=hashes_limit:
+            print('was unable to find blocks')
             return False
         state=state_library.current_state(reward_pubkey)
-        bitcoin_count=bitcoin.getblockcount()
-        bitcoin_hash=bitcoin.getblockhash(bitcoin_count)
+        bitcoin_count=getblockcount()
+        bitcoin_hash=getblockhash(bitcoin_count)
         diff=difficulty(bitcoin_count, state['length']+1)
         nonce=random.randint(0,10000000000000000)
         time.sleep(0.01)
@@ -322,13 +406,15 @@ def mine_1(reward_pubkey):
         transactions.append({'type':'mint', 'amount':10**5, 'id':reward_pubkey, 'count':count})
         length=state['length']
         sha=blockhash(length, nonce, state, transactions, bitcoin_hash)
-    block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'exact':sha['exact'], 'prev_sha':state['recent_hash']}
+#    block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'exact':sha['exact'], 'prev_sha':state['recent_hash']}
+    block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'prev_sha':state['recent_hash']}
     print('new link: ' +str(block))
     chain_push(block)
+    pushblock(block, peers)
 def mine(reward_pubkey, peers):
     while True:
         peer_check_all(peers)
-        mine_1(reward_pubkey)
+        mine_1(reward_pubkey, peers)
 def fork_check(newblocks, state):#while we are mining on a forked chain, this check returns True. once we are back onto main chain, it returns false.
     try:
 #        hashes=filter(lambda x: 'prev_sha' in x and x['prev_sha']==state['recent_hash'], newblocks)
@@ -343,6 +429,14 @@ def peer_check_all(peers):
         blocks+=peer_check(peer)
     for block in blocks:
         chain_push(block)
+
+def pushtx(tx, peers):
+    for p in peers:
+        send_command(p, {'type':'pushtx', 'tx':tx})
+
+def pushblock(block, peers):
+    for p in peers:
+        send_command(p, {'type':'pushblock', 'block':block})    
 
 def peer_check(peer):
     state=state_library.current_state()

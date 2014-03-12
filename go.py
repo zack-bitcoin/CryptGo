@@ -47,7 +47,7 @@ def new_game(tx):
     tx['move_number']=1
     return tx
 def remove_dead_stones(board, move):
-    print('board: ' +str(board))
+#    print('board: ' +str(board))
     color=board['whos_turn']
     if color=='white':
         other_color='black'
@@ -70,13 +70,13 @@ def remove_dead_stones(board, move):
             return [pt]+group([pt[0]+1,pt[1]], color, board)+group([pt[0]-1,pt[1]], color, board)+group([pt[0],pt[1]+1], color, board)+group([pt[0],pt[1]-1], color, board)
     def set_minus(l1, l2):#l1-l2
         out=[]
-        print('l1: ' +str(l1))
-        print('l2: ' +str(l2))
+#        print('l1: ' +str(l1))
+#        print('l2: ' +str(l2))
         for i in l1:
             if i not in l2:
                 out.append(i)
         return out
-    print('move: ' +str(move))
+#    print('move: ' +str(move))
     around=[[move[0]+1, move[1]],[move[0]-1, move[1]],[move[0], move[1]+1],[move[0], move[1]-1]]
     around
     for pt in around:

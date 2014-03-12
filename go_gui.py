@@ -1,7 +1,7 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import string,cgi,time, json, random, copy, pickle, os
 PORT=8090
-import blockchain, state_library, go
+import blockchain, state_library, go, quick_mine
 import pybitcointools as pt
 
 #privkey=pt.sha256("Brain Wallet Here")
@@ -47,6 +47,8 @@ def easy_add_transaction(tx_orig, sign_over, privkey):
             tx['move_number']+=1
             tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, sign_over), privkey)
             print(blockchain.add_transaction(tx))
+    print('tx: ' +str(tx))
+    blockchain.pushtx(tx, quick_mine.peers_list)
 def fs2dic(fs):
     dic={}
     for i in fs.keys():
@@ -80,17 +82,13 @@ def dot_spot(s, i, j):
     sp=[2,10]
     if s==13 and ((i in sp and j in sp) or (j==6 and i==6)):
         return True
-def board_spot(j, i, moves_played, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, white_txs, black_txs, privkey):
+def board_spot(j, i, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, privkey):
     s=board['size']
     out='{}'
     if [j, i] in board['white']:
         out=out.format(hex2htmlPicture(white_txt))
-    elif [j, i] in white_txs:
-        out=out.format(hex2htmlPicture(half_white_txt))
     elif [j, i] in board['black']:
         out=out.format(hex2htmlPicture(black_txt))
-    elif [j, i] in black_txs:
-        out=out.format(hex2htmlPicture(half_black_txt))
     else:
         img=empty_txt
         if dot_spot(s, i, j):
@@ -101,9 +99,19 @@ def board_spot(j, i, moves_played, not_whos_turn_pubkey, whos_turn_pubkey, pubke
             out=out.format(hex2htmlPicture(img))
     return out
     
-def board(out, board, privkey):
+def board(out, state, game, privkey):
+#    state=copy.deepcopy(state)
+#    transactions=blockchain.load_transactions()
+#    a=blockchain.verify_transactions(transactions, state)
+#    if a['bool']:
+#        state=a['newstate']
+#    else:
+#        pass
+#        print('ERROR')
+#    print('state: ' +str(state))
+    board=state[game]
     s=board['size']
-    transactions=blockchain.load_transactions()
+    '''
     transactions=filter(lambda x: x['game_name']==board['game_name'], transactions)
     black_tx=filter(lambda x: x['id']==board['pubkey_black'], transactions)
     white_tx=filter(lambda x: x['id']==board['pubkey_white'], transactions)
@@ -120,19 +128,20 @@ def board(out, board, privkey):
             white_txs.append(i['where'])
         else:
             out=out.format('<p>You are attempting to win this game</p>{}')
+'''
     pubkey=pt.privtopub(privkey)
+    #instead of putting more stones on the board, we should be trying to calculate what the next board will look like.
     if board['whos_turn']=='white':
         whos_turn_pubkey=board['pubkey_white']
         not_whos_turn_pubkey=board['pubkey_black']
-        moves_played=white_txs
     else:
         whos_turn_pubkey=board['pubkey_black']
         not_whos_turn_pubkey=board['pubkey_white']
-        moves_played=black_txs
     for j in range(s):
         out=out.format('<br>{}')
         for i in range(s):
-            out=out.format(board_spot(j, i, moves_played, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, white_txs, black_txs, privkey))
+#            out=out.format(board_spot(j, i, moves_played, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, white_txs, black_txs, privkey))
+            out=out.format(board_spot(j, i, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, privkey))
     return out
 def page1():
     out=empty_page
@@ -168,6 +177,15 @@ def home(dic):
     out=out.format('<p>your address is: ' +str(pubkey)+'</p>{}')
     state=state_library.current_state()
     out=out.format('<p>current block is: ' +str(state['length'])+'</p>{}')
+    transactions=blockchain.load_transactions()
+    a=blockchain.verify_transactions(transactions, state)
+    if a['bool']:
+        state=a['newstate']
+    else:
+        pass
+        print(a)
+        print(transactions)
+        print('ERROR')
     if pubkey not in state:
         state[pubkey]={'amount':0}
     if 'amount' not in state[pubkey]:
@@ -178,7 +196,8 @@ def home(dic):
         if game in state:
             out=out.format('<h1>Timer: ' + str(state[game]['last_move_time']+state[game]['time']-state['length'])+' </h1>{}')
         if game in state.keys():
-            out=board(out, state[game], privkey)
+            in_last_block=state[game]
+            out=board(out, state, game, privkey)
             out=out.format(easyForm('/home', 'win this game', '''
             <input type="hidden" name="do" value="winGame">
             <input type="hidden" name="privkey" value="{}">

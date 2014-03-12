@@ -36,6 +36,16 @@ def page1(dic):
     out=out.format('<p>It Works!!</p>{}')
     return out.format('')
 #server
+def pushtx(dic):
+#    try:
+    blockchain.add_transaction(dic['tx'])
+#    except:
+#        pass
+def pushblock(dic):
+#    try:
+    blockchain.chain_push(dic['block'])
+#    except:
+#        pass
 def info(dic):
     state=state_library.current_state()
     chain=blockchain.load_chain()
@@ -88,7 +98,7 @@ class MyHandler(BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(page1(dic))
                     return    
-            locations=['/tradeChain?', '/info?']
+            locations=['/tradeChain?', '/info?', '/pushtx?', '/pushblock?']
             for location in locations:
                 if path[:len(location)]==location:
                     if len(path)>len(location)+1:
@@ -102,6 +112,10 @@ class MyHandler(BaseHTTPRequestHandler):
                         self.wfile.write(tradeChain(dic))
                     elif location=='/info?':                    
                         self.wfile.write(info(dic))
+                    elif location=='/pushtx?': 
+                        self.wfile.write(pushtx(dic))
+                    elif location=='/pushblock?': 
+                        self.wfile.write(pushblock(dic))
                     return
             filepath = self.path[1:] # remove leading '/'    
             if [].count(filepath)>0:
