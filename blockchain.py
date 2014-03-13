@@ -31,6 +31,7 @@ def load_appendDB(file):
 def load_transactions():
     return load_appendDB(transactions_database)
 def load_chain():
+    open(chain_db, 'a').close()
     current=load_appendDB(chain_db)
     if len(current)<1:
         return [genesis]
