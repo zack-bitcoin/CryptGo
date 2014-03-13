@@ -4,3 +4,4 @@ peers_list=['http://www.sbb.tc/info?{}',
 listen_port=8071
 gui_port=8090
 brain_wallet="password"
+hashes_till_check=0

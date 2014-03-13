@@ -1,4 +1,4 @@
-import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time
+import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time, config
 import pybitcointools as pt
 import state_library
 try:
@@ -303,7 +303,9 @@ def attempt_absorb(tx, state):
 
 #    print('tx: ' +str(tx))
     if tx['type']=='newGame':
-        if state[tx['id']]['amount']<=250000:
+        if 'amount' not in state[tx['id']] or type(state[tx['id']]) != type(5):
+            return (state_orig, False)
+        if state[tx['id']]['amount']<=25000:
             return (state_orig, False)
         if not go.newGameCheck(tx, state) or not spend_check_1(tx, state):
             print('FAILED NEW GAME CHECK')
@@ -317,7 +319,7 @@ def attempt_absorb(tx, state):
         if 'amount' not in state[pubkey_black]:
             print('not enough money failure')
             return (state_orig, False)
-        state[pubkey_black]['amount']-=250000#1/4 of mining reward
+        state[pubkey_black]['amount']-=25000#1/4 of mining reward
 	if tx['amount']>0:
             state[pubkey_black]['amount']-=tx['amount']
             state[pubkey_white]['amount']-=tx['amount']
@@ -327,7 +329,7 @@ def attempt_absorb(tx, state):
             print('FAILED WIN GAME CHECK')
             return (state_orig, False)
         pubkey_black=state[tx['game_name']]['pubkey_black']
-        state[pubkey_black]['amount']+=250000
+        state[pubkey_black]['amount']+=25000
 #        print('tx: ' +str(tx))
         a=state[tx['game_name']]['amount']
         if a>0:
@@ -400,13 +402,12 @@ def send_command(peer, command):
 def mine_1(reward_pubkey, peers):
     sha={'hash':100}
     diff=0
-    hashes_limit=60
+    hashes_limit=1+config.hashes_till_check
     hash_count=0
     print('start mining ' +str(hashes_limit)+ ' times')
     while sha['hash']>diff:
 #        print(str(hash_count))
-        hash_count+=1
-        if hash_count>=hashes_limit:
+        if hash_count>=config.hashes_till_check:
             print('was unable to find blocks')
             return False
         state=state_library.current_state(reward_pubkey)
@@ -424,6 +425,7 @@ def mine_1(reward_pubkey, peers):
         transactions.append({'type':'mint', 'amount':10**5, 'id':reward_pubkey, 'count':count})
         length=state['length']
         sha=blockhash(length, nonce, state, transactions, bitcoin_hash)
+        hash_count+=1
 #    block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'exact':sha['exact'], 'prev_sha':state['recent_hash']}
     block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'prev_sha':state['recent_hash']}
     print('new link: ' +str(block))
@@ -432,9 +434,7 @@ def mine_1(reward_pubkey, peers):
 def mine(reward_pubkey, peers):
     while True:
         peer_check_all(peers)
-        times=0
-        for i in range(times):
-            mine_1(reward_pubkey, peers)
+        mine_1(reward_pubkey, peers)
 def fork_check(newblocks, state):#while we are mining on a forked chain, this check returns True. once we are back onto main chain, it returns false.
     try:
 #        hashes=filter(lambda x: 'prev_sha' in x and x['prev_sha']==state['recent_hash'], newblocks)
@@ -497,7 +497,7 @@ def peer_check(peer):
         add_transactions(txs)
         pushers=set_minus(my_txs, txs, ['count', 'id'])
         for push in pushers:
-            pushtx(push)
+            pushtx(push, [peer])
         return []
     if ahead>1300:
         try_state=cmd({'type':'backup_states',
