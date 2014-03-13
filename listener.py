@@ -71,7 +71,7 @@ def info(dic):
         out={}
         for i in backups.keys():
             find_biggest=0
-            if int(i)<dic['start'] and int(i)>find_biggest:
+            if int(i)<int(dic['start']) and int(i)>int(find_biggest):
                 find_biggest=int(i)
         return package(backups[str(find_biggest)])
 
