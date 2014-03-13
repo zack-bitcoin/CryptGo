@@ -36,16 +36,6 @@ def page1(dic):
     out=out.format('<p>It Works!!</p>{}')
     return out.format('')
 #server
-def pushtx(dic):
-#    try:
-    blockchain.add_transaction(dic['tx'])
-#    except:
-#        pass
-def pushblock(dic):
-#    try:
-    blockchain.chain_push(dic['block'])
-#    except:
-#        pass
 def info(dic):
     state=state_library.current_state()
     chain=blockchain.load_chain()
@@ -74,6 +64,10 @@ def info(dic):
             if int(i)<int(dic['start']) and int(i)>int(find_biggest):
                 find_biggest=int(i)
         return package(backups[str(find_biggest)])
+    if dic['type']=='pushtx':
+        blockchain.add_transaction(dic['tx'])
+    if dic['type']=='pushblock':
+        blockchain.chain_push(dic['block'])
 
 def tradeChain(dic):
     print('dic: '+str(dic))
@@ -121,10 +115,10 @@ class MyHandler(BaseHTTPRequestHandler):
                         self.wfile.write(tradeChain(dic))
                     elif location=='/info?':                    
                         self.wfile.write(info(dic))
-                    elif location=='/pushtx?': 
-                        self.wfile.write(pushtx(dic))
-                    elif location=='/pushblock?': 
-                        self.wfile.write(pushblock(dic))
+#                    elif location=='/pushtx?': 
+#                        self.wfile.write(pushtx(dic))
+#                    elif location=='/pushblock?': 
+#                        self.wfile.write(pushblock(dic))
                     return
             filepath = self.path[1:] # remove leading '/'    
             if [].count(filepath)>0:
