@@ -457,6 +457,17 @@ def pushtx(tx, peers):
 def pushblock(block, peers):
     for p in peers:
         send_command(p, {'type':'pushblock', 'block':block})    
+def set_minus(l1, l2, ids):#l1-l2
+    out=[]
+    def member_of(a, l, ids):
+        for i in l:
+            if a[ids[0]]==i[ids[0]] and a[ids[1]]==i[ids[1]]:
+                return True
+        return False
+    for i in l1:
+        if not member_of(i, l2, ids):
+            out.append(i)
+    return out
 
 def peer_check(peer):
     print('checking peer')
@@ -476,8 +487,12 @@ def peer_check(peer):
             chain_unpush()
             print('WE WERE ON A FORK. time to back up.')
             return []
+        my_txs=load_transactions()
         txs=cmd({'type':'transactions'})
         add_transactions(txs)
+        pushers=set_minus(my_txs, txs, ['count', 'id'])
+        for push in pushers:
+            pushtx(push)
         return []
     start=int(state['length'])-20
     if start<0:
