@@ -1,8 +1,8 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-import string,cgi,time, json, random, copy, pickle, os
-PORT=8090
+import string,cgi,time, json, random, copy, pickle, os, config
 import blockchain, state_library, go, quick_mine
 import pybitcointools as pt
+PORT=config.gui_port
 
 #privkey=pt.sha256("Brain Wallet Here")
 #pubkey=pt.privtopub(privkey)

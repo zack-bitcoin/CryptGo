@@ -1,10 +1,7 @@
-import blockchain
+import blockchain, config
 import pybitcointools as pt
-my_privkey=pt.sha256("0")
+my_privkey=pt.sha256(config.brain_wallet)
 my_pubkey=pt.privtopub(my_privkey)
-peers_list=['http://www.sbb.tc/info?{}',
-            'http://162.243.13.112/info?{}',
-            'http://fnsxouwikizbpqtq.onion/info?{}']#add friends!!
 if __name__ == '__main__':
-    blockchain.mine(my_pubkey, peers_list)
+    blockchain.mine(my_pubkey, config.peers_list)
 #out=blockchain.peer_check_all(peers, state)

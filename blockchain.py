@@ -427,11 +427,13 @@ def mine_1(reward_pubkey, peers):
     block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'prev_sha':state['recent_hash']}
     print('new link: ' +str(block))
     chain_push(block)
-    pushblock(block, peers)
+#    pushblock(block, peers)
 def mine(reward_pubkey, peers):
     while True:
         peer_check_all(peers)
-        mine_1(reward_pubkey, peers)
+        times=1
+        for i in range(times):
+            mine_1(reward_pubkey, peers)
 def fork_check(newblocks, state):#while we are mining on a forked chain, this check returns True. once we are back onto main chain, it returns false.
     try:
 #        hashes=filter(lambda x: 'prev_sha' in x and x['prev_sha']==state['recent_hash'], newblocks)

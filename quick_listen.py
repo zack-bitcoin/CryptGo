@@ -1,2 +1,2 @@
-import listener
-listener.main(8071)
+import listener, config
+listener.main(config.listen_port)
