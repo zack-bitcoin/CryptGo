@@ -20,7 +20,8 @@ python go_gui.py
 To look at the gui, send you browser to: 
 http://localhost:8090
 
-
+======MINE======
+You NEED an external IP. For most people, the easiest way to do this is by making a TOR .onion url. If you will leave your miner up consistently, send you external IP or you .onion url to zack-bitcoin so that you can get better connection, and less of your blocks will get orphaned.
 
 ===Optional: Use TOR===
 You also need:
