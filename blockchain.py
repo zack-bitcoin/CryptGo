@@ -479,6 +479,7 @@ def peer_check(peer):
         return []
     if 'error' in block_count.keys():
         return []        
+    print('state: ' +str(state))
     ahead=int(block_count['length'])-int(state['length'])
     if ahead < 0:
         return []
@@ -493,6 +494,14 @@ def peer_check(peer):
         pushers=set_minus(my_txs, txs, ['count', 'id'])
         for push in pushers:
             pushtx(push)
+        return []
+    if ahead>1000:
+        try_state=cmd({'type':'backup_states',
+                   'start': block_count['length']-1000})
+        if type(try_state)==type({'a':'1'}):
+            print('state: ' +str(state))
+            state=try_state
+            state_library.save_state(state)
         return []
     start=int(state['length'])-20
     if start<0:

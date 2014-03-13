@@ -66,6 +66,15 @@ def info(dic):
             return package({'error':'oops'})
     if dic['type']=='transactions':
         return package(blockchain.load_transactions())
+    if dic['type']=='backup_states':
+        backups=state_library.fs_load(state_library.backup_db,{})
+        out={}
+        for i in backups.keys():
+            find_biggest=0
+            if int(i)<dic['start'] and int(i)>find_biggest:
+                find_biggest=int(i)
+        return package(backups[str(find_biggest)])
+
 def tradeChain(dic):
     print('dic: '+str(dic))
     if dic['type']=='tx':
