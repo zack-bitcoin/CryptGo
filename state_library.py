@@ -29,4 +29,6 @@ def recent_backup():
     for i in backups.keys():
         if int(i)>num:
             num=int(i)
+    if num==0:
+        return empty_state
     return backups[str(num)]
