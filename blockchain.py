@@ -275,8 +275,8 @@ def attempt_absorb(tx, state):
     state=copy.deepcopy(state)
     state_orig=copy.deepcopy(state)
     if not verify_count(tx, state):
- #       print("invalid because the tx['count'] was wrong")
-        return (state, False)
+       print("invalid because the tx['count'] was wrong")
+       return (state, False)
     state[tx['id']]['count']+=1
     types=['spend', 'mint', 'nextTurn', 'newGame', 'winGame']
     if tx['type'] not in types: 
@@ -285,27 +285,34 @@ def attempt_absorb(tx, state):
         return (state_orig, False)
     if tx['type']=='mint':
         if not mint_check(tx, state):
+            print('MINT ERROR')
             return (state_orig, False)
         if 'amount' not in state[tx['id']].keys():
             state[tx['id']]['amount']=0
         state[tx['id']]['amount']+=tx['amount']
     if tx['type']=='spend':
         if not spend_check(tx, state):
+            print('SPEND ERROR')
             return (state_orig, False)
         state[tx['id']]['amount']-=tx['amount']
         if tx['pubkey'] not in state:
+            print('PUBKEY ERROR')
             state[tx['pubkey']]={'amount':0}
         state[tx['pubkey']]['amount']+=tx['amount']
     if tx['type']=='nextTurn':
         if not go.nextTurnCheck(tx, state):
+            print('NEXT TURN ERROR')
             return (state_orig, False)
         state[tx['game_name']]=go.next_board(state[tx['game_name']], tx['where'], state['length'])
 
 #    print('tx: ' +str(tx))
     if tx['type']=='newGame':
-        if 'amount' not in state[tx['id']] or type(state[tx['id']]) != type(5):
+        if 'amount' not in state[tx['id']] or type(state[tx['id']]['amount']) != type(5):
+            print('state: ' +str(state))
+            print('AMOUNT ERROR')
             return (state_orig, False)
         if state[tx['id']]['amount']<=25000:
+            print('AMOUNT 2 ERROR')
             return (state_orig, False)
         if not go.newGameCheck(tx, state) or not spend_check_1(tx, state):
             print('FAILED NEW GAME CHECK')

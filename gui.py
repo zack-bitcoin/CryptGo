@@ -1,6 +1,6 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import string,cgi,time, json, random, copy, pickle, os, config
-import blockchain, state_library, go, quick_mine
+import blockchain, state_library, go
 import pybitcointools as pt
 PORT=config.gui_port
 
