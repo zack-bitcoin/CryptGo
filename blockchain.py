@@ -102,7 +102,7 @@ def chain_unpush():
     chain=chain[:-1]
     #reset_chain() instead, just back up to the nearest save.
     state=state_library.recent_backup()
-    shorten_chain_db(state['length'])
+    shorten_chain_db(state['length']+1)
     state_library.save_state(state)
     txs=load_transactions()
     reset_transactions()
@@ -432,7 +432,7 @@ def mine_1(reward_pubkey, peers):
 def mine(reward_pubkey, peers):
     while True:
         peer_check_all(peers)
-        times=1
+        times=0
         for i in range(times):
             mine_1(reward_pubkey, peers)
 def fork_check(newblocks, state):#while we are mining on a forked chain, this check returns True. once we are back onto main chain, it returns false.

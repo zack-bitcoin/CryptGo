@@ -48,7 +48,7 @@ def easy_add_transaction(tx_orig, sign_over, privkey):
             tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, sign_over), privkey)
             print(blockchain.add_transaction(tx))
     print('tx: ' +str(tx))
-    blockchain.pushtx(tx, quick_mine.peers_list)
+    blockchain.pushtx(tx, config.peers_list)
 def fs2dic(fs):
     dic={}
     for i in fs.keys():
