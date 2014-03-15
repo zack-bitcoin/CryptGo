@@ -438,7 +438,7 @@ def mine_1(reward_pubkey, peers):
         bitcoin_hash=getblockhash(bitcoin_count)
         diff=difficulty(bitcoin_count, state['length']+1)
         nonce=random.randint(0,10000000000000000)
-        time.sleep(0.01)
+#        time.sleep(0.01)
         transactions=load_transactions()
         extra=0
         for tx in transactions:
