@@ -29,8 +29,13 @@ You can get free coins by emailing zack.bitcoin at gmail dot com and he will sen
 
 ##Mining go-coins===
 
-In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 60 and 300 seem to work pretty well for mining. Optimal number depends a lot on connection speed, and the power of your CPU.
+In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 10 and 50 seem to work pretty well for mining. Optimal number depends a lot on connection speed, and the power of your CPU.
 When I am playing go, I like to lower these numbers to between 1 and 10. Otherwise it takes to long to make a move.
+
+If the number is too high, then all the blocks you mine will get orphaned. If the number is too low, then you will waste all your time talking to other miners instead of mining blocks.
+
+When the system is stable, it should take 1 minute per block. 
+When lots of people are joining the system, block time could go down to 20 seconds, or less.
 
 ##External IP will allow you to route transactions around the network====
 
