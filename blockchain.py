@@ -8,7 +8,7 @@ except:
 #bitcoin = ServiceProxy("http://user:HkTlSzJkY7@127.0.0.1:8332/")
 #bitcoin=ServiceProxy("http://:hfjkdahflkjsdfa@127.0.0.1:8331/")#actually litecoin
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=290636-1224#1220
+genesisbitcoin=290600-1224#1220
 #genesisbitcoin=516070#lazy, only wait 6 seconds per block.
 chain=[genesis]
 chain_db='chain.db'
