@@ -415,15 +415,18 @@ def send_command(peer, command):
     except:
         return URL
 '''
-def mine_1(reward_pubkey, peers):
+def mine_1(reward_pubkey, peers, actually_mine):
     sha={'hash':100}
     diff=0
-    hashes_limit=config.hashes_till_check
+    if actually_mine:
+        hashes_limit=2
+    else:
+        hashes_limit=0
     hash_count=0
     print('start mining ' +str(hashes_limit)+ ' times')
     while sha['hash']>diff:
 #        print(str(hash_count))
-        if hash_count>config.hashes_till_check:
+        if hash_count>hashes_limit:
             time.sleep(2)#otherwise you send requests WAY TOO FAST and the networking miners shutdown.
             print('was unable to find blocks')
             return False
@@ -451,7 +454,7 @@ def mine_1(reward_pubkey, peers):
 def mine(reward_pubkey, peers):
     while True:
         peer_check_all(peers)
-        mine_1(reward_pubkey, peers)
+        mine_1(reward_pubkey, peers, config.mine)
 def fork_check(newblocks, state):#while we are mining on a forked chain, this check returns True. once we are back onto main chain, it returns false.
     try:
 #        hashes=filter(lambda x: 'prev_sha' in x and x['prev_sha']==state['recent_hash'], newblocks)
