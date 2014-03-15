@@ -25,7 +25,7 @@ You own at least 1/4 of one block reward. Black is the one who pays this, and bl
 You can get free coins by emailing zack.bitcoin at gmail dot com and he will send you some.
 
 
-#You can play go now. You don't have to read below this line. It is only for people who want to make money.====
+####You can play go now. You don't have to read below this line. It is only for people who want to make money.====
 
 ##Mining go-coins===
 
