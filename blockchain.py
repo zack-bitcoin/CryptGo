@@ -508,7 +508,7 @@ def peer_check(peer):
         print('aheadL ' +str(ahead))
         print('WE ARE AHEAD OF THEM')
         chain=copy.deepcopy(load_chain())
-        pushblock(chain[int(block_count['length'])+2],[peer])
+        pushblock(chain[int(block_count['length'])+1],[peer])
         return []
     if ahead == 0:#if we are on the same block, ask for any new txs
         print('ON SAME BLOCK')
