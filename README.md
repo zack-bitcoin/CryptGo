@@ -44,7 +44,7 @@ When lots of people are joining the system, block time could go down to 20 secon
 
 *Otherwise, you can use a static or dynamic IP which is accessible from the internet. Any port should be fine.
 
-*To start doing it: 
+*To start doing it: (WARINING. quick_listen.py and cryptgo.py should not be running with the same database at the same time. If you have 2 copies of the program, you can have both running simultaneous.) 
 
      python quick_listen.py
 
