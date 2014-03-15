@@ -501,7 +501,8 @@ def peer_check(peer):
     if ahead < 0:
         print('aheadL ' +str(ahead))
         print('WE ARE AHEAD OF THEM')
-        time.sleep(10)#Super-powerful miners need this, or else they get stuck on forks. 
+        if ahead<0:
+            time.sleep(10)#Super-powerful miners need this, or else they get stuck on forks. 
         #When on a fork, we spend a lot less time talking to peers, which means we spend 
         #more time mining. This means that lone miners on forks, if their computers are 
         #powerful enough, will get trapped on their own fork.
