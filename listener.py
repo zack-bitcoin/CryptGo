@@ -39,8 +39,10 @@ def page1(dic):
 def info(dic):
     state=state_library.current_state()
     chain=blockchain.load_chain()
-    if 'version' not in dic or dic['version']!=1:
+    if 'version' not in dic or dic['version']!=2:
         return package({'error':'wrong version'})
+    else:
+        dic.pop('version')
     if dic['type']=='blockCount':
         if len(chain)>0:
             return package({'length':state['length'], 'recent_hash':state['recent_hash']})

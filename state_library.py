@@ -20,16 +20,14 @@ def current_state(key=''):#lets make this grab current state from a file, instea
         current[key]={'count':1, 'amount':0}
     return current
 def backup_state(state):
-    backups=fs_load(backup_db, {})
-    backups[str(state['length'])]=state
+    backups=fs_load(backup_db, [])
+    backups.append(state)
     fs_save(backup_db, backups)
-def recent_backup():
-    backups=fs_load(backup_db, {})
-    num=0
-    for i in backups.keys():
-        if int(i)>num:
-            num=int(i)
-    if num==0:
+def recent_backup():#This deletes the backup that it uses.
+    backups=fs_load(backup_db, [])
+    try:
+        fs_save(backup_db, backups[:-1])
+        return backups[-1]
+    except:
         return empty_state
-    return backups[str(num)]
 

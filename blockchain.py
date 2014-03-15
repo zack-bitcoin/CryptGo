@@ -377,7 +377,7 @@ def spend_check(tx, state):
 def send_command(peer, command):
 #    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
     #needs dic['version']=1
-    command['version']=1
+    command['version']=2
     url=peer.format(package(command))
     print('in send command')
     if 'onion' in url:
@@ -418,12 +418,12 @@ def send_command(peer, command):
 def mine_1(reward_pubkey, peers):
     sha={'hash':100}
     diff=0
-    hashes_limit=1+config.hashes_till_check
+    hashes_limit=config.hashes_till_check
     hash_count=0
     print('start mining ' +str(hashes_limit)+ ' times')
     while sha['hash']>diff:
 #        print(str(hash_count))
-        if hash_count>=config.hashes_till_check:
+        if hash_count>config.hashes_till_check:
             time.sleep(2)#otherwise you send requests WAY TOO FAST and the networking miners shutdown.
             print('was unable to find blocks')
             return False
