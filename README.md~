@@ -4,16 +4,15 @@ http://www.python.org/download/
 
 ======RUN======
 to download the chain, and to broadcast your moves, you need this running:
-python gocoin.py
+python cryptgo.py
 
 To play go, you need the gui:
 python gui.py
 
 To look at the gui, send you browser to: 
 http://localhost:8090
-It does not cost gocoin to play, but you can only play if you own at least 25000 gocoins. (1/4 of the block reward given out every 60 seconds) 
-You can get them for free by emailing zack.bitcoin at gmail dot com and he will send you some to test it out.
-You can play with zack-bitcoin for free.
+You own at least 1/4 of one block reward. Black is the one who pays this, and black gets it back when the game is over. 
+You can get free coins by emailing zack.bitcoin at gmail dot com and he will send you some.
 
 =====You can play go now. You don't have to read below this line. It is only for people who want to make money.====
 
@@ -59,3 +58,20 @@ privoxy config file needs a line uncommented. In my config file, the line was at
         forward-socks5   /               127.0.0.1:9050 .
 
 
+=====Aspects of the program I especially want advice on=====
+If you have ideas about these things, or if you want me to hurry up with one of them, or if you want to add an idea to this list, please email me zack.bitcoin at gmail dot com.
+
+-javascript html style
+*auto-refresh the game whenever transactions.db changes, so you don't have to hit the refresh button over and over. (I think a solution to this will involve javascript.)
+*a web wallet so that we don't have to install python
+*an easy way to start a game with a handicap (CryptGo already supports this, we just need a user-interface.)
+
+-alt-coin issues
+*port cgminer for CryptGo, to protect the system from 51%
+*NatPNP/UPNP for automatic port forwarding so that more people can help connect the network together.
+
+-go 
+*The ability to bet on other people's games.
+*the ability to re-play old games
+*experation date (opposite of nlocktime) so that your partner wont start the game hours later than you had expected.
+*nlocktime, to schedule a game in the future.

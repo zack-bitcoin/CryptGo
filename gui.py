@@ -8,7 +8,7 @@ PORT=config.gui_port
 #pubkey=pt.privtopub(privkey)
 #state=state_library.current_state()
 #my_count=state[pubkey]['count']
-spend_list=['type','pubkey', 'amount', 'count']
+spend_list=['type','pubkey', 'amount', 'count', 'to']
 win_list=['game_name', 'id']
 def spend(amount, pubkey, to_pubkey):
     tx={'type':'spend', 'id':pubkey, 'amount':amount, 'to':to_pubkey}
