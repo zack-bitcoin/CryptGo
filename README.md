@@ -1,10 +1,10 @@
-======INSTALL======
+##INSTALL======
 
 You need to have python installed: (linux and mac probably already have python)
 
 http://www.python.org/download/
 
-======RUN======
+##RUN======
 
 to download the chain, and to broadcast your moves, you need this running:
 
@@ -25,15 +25,14 @@ You own at least 1/4 of one block reward. Black is the one who pays this, and bl
 You can get free coins by emailing zack.bitcoin at gmail dot com and he will send you some.
 
 
+#You can play go now. You don't have to read below this line. It is only for people who want to make money.====
 
-=====You can play go now. You don't have to read below this line. It is only for people who want to make money.====
+##Mining go-coins===
 
-===Mining go-coins===
+In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 60 and 300 seem to work pretty well for mining. Optimal number depends a lot on connection speed, and the power of your CPU.
+When I am playing go, I like to lower these numbers to between 1 and 10. Otherwise it takes to long to make a move.
 
-In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 60 and 300 seem to work pret
-ty well. Optimal number depends a lot on connection speed, and the power of your CPU.
-
-===External IP will allow you to route transactions around the network====
+##External IP will allow you to route transactions around the network====
 
 *An easy way to do this is by creating a TOR .onion url. 
 
@@ -49,13 +48,13 @@ ty well. Optimal number depends a lot on connection speed, and the power of your
 
 *Large amounts of gocoin will be awarded on a donation basis according to the percentage of the network that you support.
 
-===Using external IP===
+##Using external IP===
 
 port numbers are controlled by the config.py file.
 
-##Warning for TOR users! sometimes TOR's default IPs are 9050/9051, other times they are 9150/9151
+Warning for TOR users! sometimes TOR's default IPs are 9050/9051, other times they are 9150/9151
 
-=====Windows TOR configuration, if you don't want to use your external IP=====
+##Windows TOR configuration, if you don't want to use your external IP=====
 
 Be sure to get a version of TOR which includes vidalia. The vidalia gui interface is used to configure ports and create your .onion url.
 
@@ -69,7 +68,7 @@ privoxy config file needs a line uncommented. In my config file, the line was at
 
         forward-socks5   /               127.0.0.1:9050 .
 
-=====Linux TOR configuration, if you don't want to use your external IP=====
+##Linux TOR configuration, if you don't want to use your external IP=====
 
 You will need:
 
@@ -80,22 +79,18 @@ http://www.privoxy.org/
 torrc needs to be configured so that you have an onion url.
 
 The onion url is used to share blocks between the miners.
-```
----Add these lines to your torrc---
-SocksListenAddress 127.0.0.1
-SocksPort 9050
-ControlPort 9051
-HiddenServiceDir /location/of/file/that/contains/this/readme
-HiddenServicePort 80 127.0.0.1:8071
------------------------------------
-```
+        SocksListenAddress 127.0.0.1
+        SocksPort 9050
+        ControlPort 9051
+        HiddenServiceDir /location/of/file/that/contains/this/readme
+        HiddenServicePort 80 127.0.0.1:8071
 
 privoxy config file needs a line uncommented. In my config file, the line was at about line number 1300 or so, it says:
 
         forward-socks5   /               127.0.0.1:9050 .
 
 
-=====Aspects of the program I especially want advice on=====
+##Aspects of the program I especially want advice on=====
 
 If you have ideas about these things, or if you want me to hurry up with one of them, or if you want to add an idea to this list, please email me zack.bitcoin at gmail dot com.
 
