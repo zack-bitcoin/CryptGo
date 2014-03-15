@@ -8,7 +8,7 @@ except:
 #bitcoin = ServiceProxy("http://user:HkTlSzJkY7@127.0.0.1:8332/")
 #bitcoin=ServiceProxy("http://:hfjkdahflkjsdfa@127.0.0.1:8331/")#actually litecoin
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=290413-1224#1220
+genesisbitcoin=290636-1224#1220
 #genesisbitcoin=516070#lazy, only wait 6 seconds per block.
 chain=[genesis]
 chain_db='chain.db'
@@ -505,9 +505,10 @@ def peer_check(peer):
     print('state: ' +str(state))
     ahead=int(block_count['length'])-int(state['length'])
     if ahead < 0:
+        print('aheadL ' +str(ahead))
         print('WE ARE AHEAD OF THEM')
         chain=copy.deepcopy(load_chain())
-        pushblock(chain[int(block_count['length'])+1],[peer])
+        pushblock(chain[int(block_count['length'])+2],[peer])
         return []
     if ahead == 0:#if we are on the same block, ask for any new txs
         print('ON SAME BLOCK')

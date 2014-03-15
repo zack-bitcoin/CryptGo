@@ -146,7 +146,7 @@ def home(dic):
     def clean_state():
         transactions=blockchain.load_transactions()
         state=state_library.current_state()
-        a=blockchain.verify_transactions(transactions, state)['newstate']
+        return blockchain.verify_transactions(transactions, state)['newstate']
     state=clean_state()
     if 'do' in dic.keys():
         if dic['do']=='newGame':
@@ -169,6 +169,7 @@ def home(dic):
         state=clean_state()
     out=empty_page
     out=out.format('<p>your address is: ' +str(pubkey)+'</p>{}')
+    print('state: ' +str(state))
     out=out.format('<p>current block is: ' +str(state['length'])+'</p>{}')
     if pubkey not in state:
         state[pubkey]={'amount':0}
