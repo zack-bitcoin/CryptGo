@@ -34,8 +34,9 @@ When I am playing go, I like to lower these numbers to between 1 and 10. Otherwi
 
 If the number is too high, then all the blocks you mine will get orphaned. If the number is too low, then you will waste all your time talking to other miners instead of mining blocks.
 
-When the system is stable, it should take 1 minute per block. 
-When lots of people are joining the system, block time could go down to 20 seconds, or less.
+When the system is stable, it should take 1 minute per block. In this situation you might want to experiment with bigger numbers like 60 for faster mining speed.
+
+When lots of people are joining the system, block time could go down to 20 seconds, or less. In this situation, you want a very low number, like 5, otherwise you will only mine orphans, and you could end up on a fork.
 
 ##External IP will allow you to route transactions around the network====
 

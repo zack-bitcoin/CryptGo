@@ -1,4 +1,4 @@
-peers_list=[#'http://www.sbb.tc/info?{}',
+peers_list=['http://www.sbb.tc/info?{}',
             'http://162.243.13.112:81/info?{}',
             'http://fnsxouwikizbpqtq.onion/info?{}']#add friends!!
 listen_port=80
