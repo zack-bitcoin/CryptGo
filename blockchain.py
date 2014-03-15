@@ -1,4 +1,4 @@
-import string,cgi,time, random, copy, os, copy, urllib, go, urllib2, time, config, json
+import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time, config
 import pybitcointools as pt
 import state_library
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
@@ -424,6 +424,7 @@ def mine_1(reward_pubkey, peers):
     while sha['hash']>diff:
 #        print(str(hash_count))
         if hash_count>=config.hashes_till_check:
+            time.sleep(2)#otherwise you send requests WAY TOO FAST and the networking miners shutdown.
             print('was unable to find blocks')
             return False
         state=state_library.current_state(reward_pubkey)
