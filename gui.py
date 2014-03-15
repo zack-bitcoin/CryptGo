@@ -8,47 +8,59 @@ PORT=config.gui_port
 #pubkey=pt.privtopub(privkey)
 #state=state_library.current_state()
 #my_count=state[pubkey]['count']
-spend_list=['type','pubkey', 'amount', 'count', 'to']
 win_list=['game_name', 'id']
-def spend(amount, pubkey, to_pubkey):
+spend_list=blockchain.spend_list
+def spend(amount, pubkey, privkey, to_pubkey, state):
+    amount=int(amount*(10**5))
     tx={'type':'spend', 'id':pubkey, 'amount':amount, 'to':to_pubkey}
-    easy_add_transaction(tx, spend_list, privkey)
-def wingame(game_name, pubkey, privkey):
+    easy_add_transaction(tx, spend_list, privkey, state)
+def wingame(game_name, pubkey, privkey, state):
     tx={'type':'winGame', 'game_name':game_name, 'id':pubkey}
-    easy_add_transaction(tx, win_list, privkey)
-def newgame(opponent, name, pubkey_mine, privkey, size=19, amount=0):
+    easy_add_transaction(tx, win_list, privkey, state)
+def newgame(opponent, name, pubkey_mine, privkey, state, size=19, amount=0):
+    try:
+        amount=int(float(amount)*(10**5))
+    except:
+        amount=0
+    try:
+        size=int(size)
+    except:
+        size=19
     amount=int(amount)
     print('NEWGAME')
     tx={'type':'newGame', 'game_name':name, 'id':pubkey_mine, 'pubkey_white':opponent, 'pubkey_black':pubkey_mine, 'whos_turn':'black', 'time':5, 'white':[], 'black':[], 'size':size, 'amount':amount}
-    easy_add_transaction(tx, go.newgame_sig_list, privkey)
-def move(game_name, location, pubkey, privkey):
-    state=state_library.current_state()
+    easy_add_transaction(tx, go.newgame_sig_list, privkey, state)
+def move(game_name, location, pubkey, privkey, state):
+#    state=state_library.current_state()
     board=state[game_name]
-    print('location: ' +str(location))
-    txs=blockchain.load_transactions()
-    game_txs=filter(lambda x: x['game_name']==game_name, txs)
-    tx_orig={'type':'nextTurn', 'id':pubkey, 'game_name':game_name, 'where':location, 'move_number':board['move_number']+len(game_txs)}
-    easy_add_transaction(tx_orig, go.nextturn_sig_list, privkey)
-def easy_add_transaction(tx_orig, sign_over, privkey):
-    state=state_library.current_state()
+#    print('location: ' +str(location))
+#    txs=blockchain.load_transactions()
+#    txs=filter(lambda x: 'game_name' in x, txs)
+#    game_txs=filter(lambda x: x['game_name']==game_name, txs)
+    tx_orig={'type':'nextTurn', 'id':pubkey, 'game_name':game_name, 'where':location, 'move_number':board['move_number']}#+len(game_txs)}
+    easy_add_transaction(tx_orig, go.nextturn_sig_list, privkey, state)
+def easy_add_transaction(tx_orig, sign_over, privkey, state):
+    tx=copy.deepcopy(tx_orig)
     pubkey=pt.privtopub(privkey)
     if pubkey not in state or 'count' not in state[pubkey]:
-        my_count=1
+        tx['count']=1
     else:
-        my_count=state[pubkey]['count']
+        tx['count']=state[pubkey]['count']
     txs=blockchain.load_transactions()
     my_txs=filter(lambda x: x['id']==pubkey, txs)
-    tx=copy.deepcopy(tx_orig)
-    tx['count']=len(my_txs)+my_count
     tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, sign_over), privkey)
-    print(blockchain.add_transaction(tx))
+    if blockchain.add_transaction(tx):
+        blockchain.pushtx(tx, config.peers_list)
+        return True
     if 'move_number' in tx:
         for i in range(10):
             tx['move_number']+=1
             tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, sign_over), privkey)
-            print(blockchain.add_transaction(tx))
-    print('tx: ' +str(tx))
-    blockchain.pushtx(tx, config.peers_list)
+            if blockchain.add_transaction(tx):
+                blockchain.pushtx(tx, config.peers_list)
+                return True
+    print('SOMETHING IS BROKEN')
+    return False
 def fs2dic(fs):
     dic={}
     for i in fs.keys():
@@ -72,65 +84,45 @@ def easyForm(link, button_says, moreHtml='', typee='post'):
         return a.format('post', '{}')
 linkHome = easyForm('/', 'HOME', '', 'get')
 
-def dot_spot(s, i, j):
+def dot_spot(s, i, j):#the black dots that help for counting out where on the board you are playing. They only show up on board sizes 9, 13, and 19.
     sp=[3,9,15]
-    if s==19 and i in sp and j in sp:
+    if s==19 and i in sp and j in sp:#if board is size 19
         return True
     sp=[2,6]
-    if s==9 and i in sp and j in sp:
+    if s==9 and i in sp and j in sp:#if board is size 9
         return True
     sp=[2,10]
-    if s==13 and ((i in sp and j in sp) or (j==6 and i==6)):
+    if s==13 and ((i in sp and j in sp) or (j==6 and i==6)):#if board is size 13
         return True
 def board_spot(j, i, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, privkey):
-    s=board['size']
+    s=board['size']#usually 19
     out='{}'
+    def pic(x):
+        return hex2htmlPicture(x, board_size/19)
     if [j, i] in board['white']:
-        out=out.format(hex2htmlPicture(white_txt))
+        if board['whos_turn']=='black' and [j, i] == board['white'][-1]:
+            out=out.format(pic(half_white_txt))
+        else:
+            out=out.format(pic(white_txt))
     elif [j, i] in board['black']:
-        out=out.format(hex2htmlPicture(black_txt))
+        if board['whos_turn']=='white' and [j, i] == board['black'][-1]:
+            out=out.format(pic(half_black_txt))
+        else:
+            out=out.format(pic(black_txt))
     else:
         img=empty_txt
         if dot_spot(s, i, j):
             img=dot_txt
         if True:
-            out=out.format('''<form style='display:inline;\n margin:0;\n padding:0;' name="play_a_move" action="/home" method="POST"><input type="image" src="{}" name="move" height="{}"><input type="hidden" name="move" value="{},{}"><input type="hidden" name="game" value="{}"><input type="hidden" name="privkey" value="{}"></form>{}'''.format(txt2src(img), str(piece_size), str(j), str(i), board['game_name'], privkey,'{}'))
+            out=out.format('''<form style='display:inline;\n margin:0;\n padding:0;' name="play_a_move" action="/home" method="POST"><input type="image" src="{}" name="move" height="{}"><input type="hidden" name="move" value="{},{}"><input type="hidden" name="game" value="{}"><input type="hidden" name="privkey" value="{}"></form>{}'''.format(txt2src(img), str(board_size/19), str(j), str(i), board['game_name'], privkey,'{}'))
         else:
             out=out.format(hex2htmlPicture(img))
     return out
     
 def board(out, state, game, privkey):
-#    state=copy.deepcopy(state)
-#    transactions=blockchain.load_transactions()
-#    a=blockchain.verify_transactions(transactions, state)
-#    if a['bool']:
-#        state=a['newstate']
-#    else:
-#        pass
-#        print('ERROR')
-#    print('state: ' +str(state))
     board=state[game]
     s=board['size']
-    '''
-    transactions=filter(lambda x: x['game_name']==board['game_name'], transactions)
-    black_tx=filter(lambda x: x['id']==board['pubkey_black'], transactions)
-    white_tx=filter(lambda x: x['id']==board['pubkey_white'], transactions)
-    black_txs=[]
-    white_txs=[]
-    print('black: ' +str(black_tx))
-    for i in black_tx:
-        if 'where' in i:
-            black_txs.append(i['where'])
-        else:
-            out=out.format('<p>You are attempting to win this game</p>{}')
-    for i in white_tx:
-        if 'where' in i:
-            white_txs.append(i['where'])
-        else:
-            out=out.format('<p>You are attempting to win this game</p>{}')
-'''
     pubkey=pt.privtopub(privkey)
-    #instead of putting more stones on the board, we should be trying to calculate what the next board will look like.
     if board['whos_turn']=='white':
         whos_turn_pubkey=board['pubkey_white']
         not_whos_turn_pubkey=board['pubkey_black']
@@ -140,7 +132,6 @@ def board(out, state, game, privkey):
     for j in range(s):
         out=out.format('<br>{}')
         for i in range(s):
-#            out=out.format(board_spot(j, i, moves_played, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, white_txs, black_txs, privkey))
             out=out.format(board_spot(j, i, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, privkey))
     return out
 def page1():
@@ -148,49 +139,51 @@ def page1():
     out=out.format(easyForm('/home', 'Play Go!', '<input type="text" name="BrainWallet" value="">'))
     return out.format('')
 def home(dic):
-    print(dic)
     if 'BrainWallet' in dic:
         dic['privkey']=pt.sha256(dic['BrainWallet'])
     privkey=dic['privkey']
-    print('priv: ' +str(dic['privkey']))
     pubkey=pt.privtopub(dic['privkey'])
+    def clean_state():
+        transactions=blockchain.load_transactions()
+        state=state_library.current_state()
+        a=blockchain.verify_transactions(transactions, state)['newstate']
+    state=clean_state()
     if 'do' in dic.keys():
         if dic['do']=='newGame':
-            try:
-                a=newgame(dic['partner'], dic['game'], pubkey, privkey, int(dic['size']), dic['amount'])
-            except:
-                a=newgame(dic['partner'], dic['game'], pubkey, privkey, 19, dic['amount'])
+            a=newgame(dic['partner'], dic['game'], pubkey, privkey, state, dic['size'], dic['amount'])
             active_games.append(dic['game'])
         if dic['do']=='winGame':
-            wingame(dic['game'], pubkey, privkey)
+            wingame(dic['game'], pubkey, privkey, state)
         if dic['do']=='joinGame':
             active_games.append(dic['game'])
         if dic['do']=='deleteGame':
             active_games.remove(dic['game'])
+        if dic['do']=='spend':
+            spend(float(dic['amount']), pubkey, privkey, dic['to'], state)
+        state=clean_state()
     if 'move' in dic.keys():
         string=dic['move'].split(',')
         i=int(string[0])
         j=int(string[1])
-        move(dic['game'], [i, j], pubkey, privkey)
-    fs=fs_load()
+        move(dic['game'], [i, j], pubkey, privkey, state)
+        state=clean_state()
     out=empty_page
     out=out.format('<p>your address is: ' +str(pubkey)+'</p>{}')
-    state=state_library.current_state()
     out=out.format('<p>current block is: ' +str(state['length'])+'</p>{}')
-    transactions=blockchain.load_transactions()
-    a=blockchain.verify_transactions(transactions, state)
-    if a['bool']:
-        state=a['newstate']
-    else:
-        pass
-        print(a)
-        print(transactions)
-        print('ERROR')
     if pubkey not in state:
         state[pubkey]={'amount':0}
     if 'amount' not in state[pubkey]:
         state[pubkey]['amount']=0
     out=out.format('<p>current balance is: ' +str(state[pubkey]['amount']/100000.0)+'</p>{}')        
+    if state[pubkey]['amount']>0:
+        out=out.format(easyForm('/home', 'spend money', '''
+        <input type="hidden" name="do" value="spend">
+        <input type="text" name="to" value="address to give to">
+        <input type="text" name="amount" value="amount to spend">
+        <input type="hidden" name="privkey" value="{}">'''.format(privkey)))    
+    s=easyForm('/home', 'Refresh boards ------[You have to click this button a lot so I am making it easy to click]----------', '''    <input type="hidden" name="privkey" value="{}">'''.format(privkey))
+    out=out.format(s)
+    out=out.format(s)
     for game in active_games:
         out=out.format("<h1>"+str(game)+"</h1>{}")
         if game in state:
@@ -212,9 +205,8 @@ def home(dic):
             <input type="hidden" name="do" value="deleteGame">
             <input type="hidden" name="privkey" value="{}">
             <input type="hidden" name="game"  value="{}">'''.format(privkey,game)))
-    out=out.format(easyForm('/home', 'Refresh boards', '''
-    <input type="hidden" name="privkey" value="{}">
-    '''.format(privkey)))    
+    out=out.format(s)
+    out=out.format(s)
     out=out.format(easyForm('/home', 'Join Game', '''
     <input type="hidden" name="do" value="joinGame">
     <input type="hidden" name="privkey" value="{}">
@@ -226,11 +218,11 @@ def home(dic):
     <input type="text" name="game" value="unique game name">
     <input type="text" name="partner" value="put your partners address here.">
     <input type="text" name="size" value="board size (9, 13, 19 are popular)">
-    <input type="text" name="amount" value="0">
+    <input type="text" name="amount" value="amount you want to bet on this game">
     '''.format(privkey)))
     return out
-def hex2htmlPicture(string):
-    return '<img height="{}" src="data:image/png;base64,{}">{}'.format(str(piece_size), string, '{}')
+def hex2htmlPicture(string, size):
+    return '<img height="{}" src="data:image/png;base64,{}">{}'.format(str(size), string, '{}')
 #def file2hexPicture(fil):
 #    return image64.convert(fil)
 #def file2htmlPicture(fil):
@@ -242,7 +234,7 @@ empty_page='<html><body>{}</body></html>'
 initial_db={}
 database='tags.db'
 board_size=500
-piece_size=board_size/19
+#piece_size=board_size/19
 dot_txt="iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gITFCMP6bUdsgAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAuSURBVAjXY/S448EAAztUdiBzmRhwA+LkdqjsgJOEASPccrgOuAjCTIgQNdwJAJ24Duf6+IShAAAAAElFTkSuQmCC"
 white_txt="iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gITDyM1P8qIkQAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAABASURBVAjXY/S448HAwMDAwLBdeTuE4XnXE8Jg8Ljj8R8b8LjjwcSAGzD+//8flxw+fXjlEK5CBZ53PfG6BY//ALQ0JoSAn9HtAAAAAElFTkSuQmCC"
 empty_txt="iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gITDyIL57CkewAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAAfSURBVAjXY/S448EAAztUdiBzmRhwA3Ll8AFGOrsFAO/zCOeJq9qTAAAAAElFTkSuQmCC"
@@ -252,11 +244,11 @@ half_white_txt='iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAAL
 def txt2src(txt):
     return "data:image/png;base64,"+txt
 #white=hex2htmlPicture(white_txt)
-dot=hex2htmlPicture(dot_txt)
-empty=hex2htmlPicture(empty_txt)
-black=hex2htmlPicture(black_txt)
-half_white=hex2htmlPicture(half_white_txt)
-half_black=hex2htmlPicture(half_black_txt)
+#dot=hex2htmlPicture(dot_txt)
+#empty=hex2htmlPicture(empty_txt)
+#black=hex2htmlPicture(black_txt)
+#half_white=hex2htmlPicture(half_white_txt)
+#half_black=hex2htmlPicture(half_black_txt)
 def fs_load():
     try:
         out=pickle.load(open(database, 'rb'))

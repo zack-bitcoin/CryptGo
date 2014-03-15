@@ -5,11 +5,8 @@ try:
     from jsonrpc import ServiceProxy
 except:
     from bitcoinrpc import AuthServiceProxy as ServiceProxy       
-#bitcoin = ServiceProxy("http://user:HkTlSzJkY7@127.0.0.1:8332/")
-#bitcoin=ServiceProxy("http://:hfjkdahflkjsdfa@127.0.0.1:8331/")#actually litecoin
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=290413-1224#1220
-#genesisbitcoin=516070#lazy, only wait 6 seconds per block.
+genesisbitcoin=290622-1224#1220
 chain=[genesis]
 chain_db='chain.db'
 transactions_database='transactions.db'
@@ -91,7 +88,7 @@ def shorten_chain_db(new_length):
     i=0
     for line in lines:
         a=line2dic(line)
-        if a['length']<=new_length and a['length']>new_length-1500:
+        if a['length']<new_length:
             f.write(line)
     f.close()
 def chain_unpush():
@@ -102,7 +99,7 @@ def chain_unpush():
     chain=chain[:-1]
     #reset_chain() instead, just back up to the nearest save.
     state=state_library.recent_backup()
-    shorten_chain_db(state['length'])
+    shorten_chain_db(state['length']+1)
     state_library.save_state(state)
     txs=load_transactions()
     reset_transactions()
@@ -253,8 +250,6 @@ def verify_count(tx, state):
 
 def verify_transactions(txs, state):
     txs=copy.deepcopy(txs)
-    if len(txs)==0:
-        return {'bool':True, 'newstate':state}
     print('txs: ' +str(txs))
     length=len(txs)
     state=copy.deepcopy(state)
@@ -296,13 +291,11 @@ def attempt_absorb(tx, state):
         if not spend_check(tx, state):
             print('SPEND ERROR')
             return (state_orig, False)
-        if tx['to'] not in state:
-            print('PUBKEY ERROR')
-            state[tx['to']]={'amount':0}
-        if 'amount' not in state[tx['to']]:
-            state[tx['to']]['amount']=0
         state[tx['id']]['amount']-=tx['amount']
-        state[tx['to']]['amount']+=tx['amount']
+        if tx['pubkey'] not in state:
+            print('PUBKEY ERROR')
+            state[tx['pubkey']]={'amount':0}
+        state[tx['pubkey']]['amount']+=tx['amount']
     if tx['type']=='nextTurn':
         if not go.nextTurnCheck(tx, state):
             print('NEXT TURN ERROR')
@@ -311,7 +304,14 @@ def attempt_absorb(tx, state):
 
 #    print('tx: ' +str(tx))
     if tx['type']=='newGame':
-        if not go.newGameCheck(tx, state):
+        if 'amount' not in state[tx['id']] or type(state[tx['id']]['amount']) != type(5):
+            print('state: ' +str(state))
+            print('AMOUNT ERROR')
+            return (state_orig, False)
+        if state[tx['id']]['amount']<=25000:
+            print('AMOUNT 2 ERROR')
+            return (state_orig, False)
+        if not go.newGameCheck(tx, state) or not spend_check_1(tx, state):
             print('FAILED NEW GAME CHECK')
             return (state_orig, False)
         state[tx['game_name']]=go.new_game(copy.deepcopy(tx))
@@ -319,6 +319,9 @@ def attempt_absorb(tx, state):
         print('state: ' +str(state))
         if pubkey_black not in state:
             print('newgame error 1')
+            return (state_orig, False)
+        if 'amount' not in state[pubkey_black]:
+            print('not enough money failure')
             return (state_orig, False)
         state[pubkey_black]['amount']-=25000#1/4 of mining reward
 	if tx['amount']>0:
@@ -341,50 +344,28 @@ def mint_check(tx, state):
     if tx['amount']>10**5:
         return False#you can only mint up to 10**5 coins per block
     return True
-spend_list=['id', 'amount', 'count', 'to']
-def enough_funds(state, pubkey, enough):
-    if enough==0:
-        return True
-    if pubkey not in state:
-        print('nonexistant people have no money')
-        return False
-    if 'amount' not in state[pubkey]:
-        print('this person has no money')
-        return False
-    funds=state[pubkey]['amount']
-    return funds>=enough
-
-def spend_check(tx, state):
+def spend_check_1(tx, state):
     if tx['id'] not in state.keys():
         print("you can't spend money from a non-existant account")
         return False
-    if 'amount' not in tx:
-        print('how much did you want to spend?')
-        return False
-    if type(tx['amount']) != type(5):
-        print('you can only spend integer amounts of money')
-        return False
-    if tx['amount']<=1000:
-        print('the minimum amount to spend is 1000 base units = 0.01 CryptGo coin.')
-        return False
-    if not enough_funds(state, tx['id'], tx['amount']):
-        print('not enough money to spend in this account')
+#    print('tx: ' +str(tx))
+    if tx['amount']>0 and tx['amount']>state[tx['id']]['amount']:
+        print("you don't have that much money to spend")
         return False
     if 'signature' not in tx:
         print("spend transactions must be signed")
         return False
-    try:
-        if not pt.ecdsa_verify(message2signObject(tx, spend_list), tx['signature'], tx['id'] ):
-            print("bad signature")
-            return False
-    except:
-        print('Weird error when checking the signature of a transaction')
+    return True
+def spend_check(tx, state):
+    if not spend_check_1(tx, state):
+        return False
+    signed_properties=['type','pubkey','amount', 'count']
+    if not pt.ecdsa_verify(message2signObject(tx, ['type','pubkey','amount', 'count']), tx['signature'], tx['id'] ):
+        print("bad signature")
         return False
     return True
 def send_command(peer, command):
 #    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-    #needs dic['version']=1
-    command['version']=1
     url=peer.format(package(command))
     print('in send command')
     if 'onion' in url:
@@ -425,12 +406,12 @@ def send_command(peer, command):
 def mine_1(reward_pubkey, peers):
     sha={'hash':100}
     diff=0
-    hashes_limit=1+config.hashes_till_check
+    hashes_limit=config.hashes_till_check
     hash_count=0
     print('start mining ' +str(hashes_limit)+ ' times')
     while sha['hash']>diff:
 #        print(str(hash_count))
-        if hash_count>=config.hashes_till_check:
+        if hash_count>config.hashes_till_check:
             print('was unable to find blocks')
             return False
         state=state_library.current_state(reward_pubkey)

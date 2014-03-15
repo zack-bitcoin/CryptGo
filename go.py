@@ -117,23 +117,46 @@ def winGameCheck(tx, state):
         return False
     return True
 def newGameCheck(i, state):
+    if 'pubkey_black' not in i.keys():
+        print('badly formated newgame')
+        return False
+    if 'pubkey_white' not in i.keys():
+        print('badly formated newgame')
+        return False
+    if not blockchain.enough_funds(state, i['pubkey_black'], 25000):
+        print('you need at least 1/4 of a CryptGo coin in order to play.')
+        return False
+    if 'game_name' not in i.keys():
+        print('the game needs a name')
+        return False
     if len(i['game_name'])>129:
         print('name too long')
         return False
     if not 'pubkey_white' in i or not 'pubkey_black' in i:
         print('13')
         return False
+    if 'whose_turn' not in i:
+        i['whos_turn']='black'
     if i['whos_turn'] not in ['white', 'black']:
         print('4')
+        return False
+    if type(i['white']) != type([1,2]):
+        return False
+    if type(i['black']) != type([1,2]):
         return False
     for j in i['white']+i['black']:
         #            print('j: ' +str(j))
         if type(j)!=type([1,2]) or len(j)!=2:
             print('5')
             return False
-    if 'time' not in i or 'size' not in i or 'white' not in i or 'black' not in i:
-        print('12')
-        return False
+    if 'time' not in i:
+        i['time']=5
+    if 'size' not in i:
+        i['size']=13
+    if 'white' not in i:
+        i['white']=[]
+    if 'black' not in i:
+        i['black']=[]
     if (type(i['time']) != type(3)):
         print('7')
         return False
@@ -144,10 +167,9 @@ def newGameCheck(i, state):
         print('6')
         return False
     if 'amount' not in i:
-        print('bet error')
-        return False
+        i['amount']=0
     if type(i['amount'])!=type(10):
-        print('bet error 2')
+        print('bet error')
         return False
     sign=blockchain.message2signObject(i, newgame_sig_list)
     if not pt.ecdsa_verify(sign, i['signature'], i['pubkey_black']):

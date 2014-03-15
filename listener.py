@@ -39,6 +39,8 @@ def page1(dic):
 def info(dic):
     state=state_library.current_state()
     chain=blockchain.load_chain()
+    if 'version' not in dic or dic['version']!=1:
+        return package({'error':'wrong version'})
     if dic['type']=='blockCount':
         if len(chain)>0:
             return package({'length':state['length'], 'recent_hash':state['recent_hash']})
@@ -101,7 +103,7 @@ class MyHandler(BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(page1(dic))
                     return    
-            locations=['/tradeChain?', '/info?', '/pushtx?', '/pushblock?']
+            locations=['/info?']
             for location in locations:
                 if path[:len(location)]==location:
                     if len(path)>len(location)+1:
