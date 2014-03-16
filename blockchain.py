@@ -443,7 +443,7 @@ def mine(reward_pubkey, peers):
         add_transactions(a)
         reset_appendDB('suggested_transactions.db')
         a=load_appendDB('suggested_blocks.db')
-        for block in blocks:
+        for block in a:
             chain_push(block)
         reset_appendDB('suggested_blocks.db')
         #if there are suggested transactions, try to add them.
