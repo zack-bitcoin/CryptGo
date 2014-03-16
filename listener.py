@@ -39,7 +39,7 @@ def page1(dic):
 def info(dic):
     state=state_library.current_state()
     chain=blockchain.load_chain()
-    if 'version' not in dic or dic['version']!=2:
+    if 'version' not in dic or dic['version']!=3:
         return package({'error':'wrong version'})
     else:
         dic.pop('version')

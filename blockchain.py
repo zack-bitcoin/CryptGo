@@ -376,7 +376,7 @@ def spend_check(tx, state):
     return True
 def send_command(peer, command):
 #    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-    command['version']=2
+    command['version']=3
     url=peer.format(package(command))
     print('in send command')
     time.sleep(1)#so we don't DDOS the networking computers which we all depend on.
