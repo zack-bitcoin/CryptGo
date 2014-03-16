@@ -90,21 +90,26 @@ def shorten_chain_db(new_length):
 def chain_unpush():
     chain=load_chain()
     orphaned_txs=[]
-    if 'transactions' in chain[0]:
-        orphaned_txs=chain[-1]['transactions']
-    chain=chain[:-1]
-    #reset_chain() instead, just back up to the nearest save.
+    txs=load_transactions()
+    state=state_library.current_state()
+    length=state['length']
     state=state_library.recent_backup()
+    for i in length-state['length']:
+        orphaned_txs+=chain[-1-i]['transactions']
+#    chain=chain[:-1]
+    #reset_chain() instead, just back up to the nearest save.
     shorten_chain_db(state['length'])
     state_library.save_state(state)
-    txs=load_transactions()
     reset_transactions()
-    for i in chain[-100:]:
-        chain_push(i)
+#    for i in chain[-100:]:
+#        chain_push(i)
     add_transactions(orphaned_txs)
     add_transactions(txs)
 count_value=0
 count_timer=time.time()-60
+def probability(p, func):
+    if random.random()<p:
+        return func
 def getblockcount():
     global count_value
     if time.time()-count_timer<60:
@@ -215,8 +220,6 @@ def new_block_check(block, state):
         return False
     elif f('sha')>diff:
         print('block invalid because blockhash is not of sufficient difficulty')
-#        print(f('sha'))
-#        print('difficulty: ' +str(diff))
         return False
     elif f('bitcoin_hash')!=getblockhash(int(f('bitcoin_count'))):
         print('block invalid because it does not contain the correct bitcoin hash')
@@ -238,9 +241,6 @@ def verify_count(tx, state):
     if 'count' not in state[tx['id']]:
         state[tx['id']]['count']=1
     if 'count' in tx and tx['count']!=state[tx['id']]['count']:
-#        print('tx: ' +str(tx))
-#        print('state: ' +str(state[tx['id']]['count']))
-#        print("#invalid because te count did not increment form last time.")
         return False
     return True
 
@@ -376,10 +376,10 @@ def spend_check(tx, state):
     return True
 def send_command(peer, command):
 #    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-    #needs dic['version']=1
     command['version']=2
     url=peer.format(package(command))
     print('in send command')
+    time.sleep(1)#so we don't DDOS the networking computers which we all depend on.
     if 'onion' in url:
         try:
             print('trying privoxy method')
@@ -403,31 +403,15 @@ def send_command(peer, command):
         return unpackage(out)
     except:
         return out
-'''
-def send_command(peer, command):
-    try:
-        URL=urllib.urlopen(peer.format(package(command)))
-    except:
-        return {'error':'peer disconnected'}
-    URL=URL.read()
-    try:
-        return unpackage(URL)
-    except:
-        return URL
-'''
-def mine_1(reward_pubkey, peers, actually_mine):
+def mine_1(reward_pubkey, peers, times):
     sha={'hash':100}
     diff=0
-    if actually_mine:
-        hashes_limit=2
-    else:
-        hashes_limit=0
     hash_count=0
-    print('start mining ' +str(hashes_limit)+ ' times')
+    print('start mining ' +str(times)+ ' times')
     while sha['hash']>diff:
 #        print(str(hash_count))
-        if hash_count>hashes_limit:
-            time.sleep(2)#otherwise you send requests WAY TOO FAST and the networking miners shutdown.
+        if hash_count>=times:
+#            time.sleep(2)#otherwise you send requests WAY TOO FAST and the networking miners shutdown.
             print('was unable to find blocks')
             return False
         state=state_library.current_state(reward_pubkey)
@@ -454,7 +438,16 @@ def mine_1(reward_pubkey, peers, actually_mine):
 def mine(reward_pubkey, peers):
     while True:
         peer_check_all(peers)
-        mine_1(reward_pubkey, peers, config.mine)
+        mine_1(reward_pubkey, peers, config.hashes_till_check)
+        a=load_appendDB('suggested_transactions.db')
+        add_transactions(a)
+        reset_appendDB('suggested_transactions.db')
+        a=load_appendDB('suggested_blocks.db')
+        for block in blocks:
+            chain_push(block)
+        reset_appendDB('suggested_blocks.db')
+        #if there are suggested transactions, try to add them.
+        #if there are suggested blocks. try to add them.
 def fork_check(newblocks, state):#while we are mining on a forked chain, this check returns True. once we are back onto main chain, it returns false.
     try:
 #        hashes=filter(lambda x: 'prev_sha' in x and x['prev_sha']==state['recent_hash'], newblocks)
@@ -502,15 +495,9 @@ def peer_check(peer):
     print('state: ' +str(state))
     ahead=int(block_count['length'])-int(state['length'])
     if ahead < 0:
-        print('aheadL ' +str(ahead))
-        print('WE ARE AHEAD OF THEM')
-        if ahead<0:
-            time.sleep(10)#Super-powerful miners need this, or else they get stuck on forks. 
-        #When on a fork, we spend a lot less time talking to peers, which means we spend 
-        #more time mining. This means that lone miners on forks, if their computers are 
-        #powerful enough, will get trapped on their own fork.
         chain=copy.deepcopy(load_chain())
         pushblock(chain[int(block_count['length'])+1],[peer])
+        probability(0.2, chain_unpush())
         return []
     if ahead == 0:#if we are on the same block, ask for any new txs
         print('ON SAME BLOCK')
@@ -525,10 +512,10 @@ def peer_check(peer):
         for push in pushers:
             pushtx(push, [peer])
         return []
-    if ahead>1300:
+    if ahead>1001:
         try_state=cmd({'type':'backup_states',
                    'start': block_count['length']-1000})
-        if type(try_state)==type({'a':'1'}):
+        if type(try_state)==type({'a':'1'}) and 'error' not in state:
             print('state: ' +str(state))
             state=try_state
             state_library.save_state(state)

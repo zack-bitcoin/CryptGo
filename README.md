@@ -30,7 +30,7 @@ You can get free coins by emailing zack.bitcoin at gmail dot com and he will sen
 ##Mining go-coins===
 
 In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 10 and 50 seem to work pretty well for mining. Optimal number depends a lot on connection speed, and the power of your CPU.
-When I am playing go, I keep this number at 0. That way there are no random forks that undo my moves. It is possible to download this program twice, and use one copy to mine, and the other copy to play go.
+When I am playing go, I keep this number between 0 and 5. I can see moves more quickly that way.
 
 If the number is too high, then all the blocks you mine will get orphaned. If the number is too low, then you will waste all your time talking to other miners instead of mining blocks.
 
@@ -44,7 +44,7 @@ When lots of people are joining the system, block time could only take 20 second
 
 *Otherwise, you can use a static or dynamic IP which is accessible from the internet. Any port should be fine.
 
-*To start doing it: (WARINING. quick_listen.py and cryptgo.py should not be running with the same database at the same time. If you have 2 copies of the program, you can have both running simultaneous.) 
+*To start doing it: 
 
      python quick_listen.py
 

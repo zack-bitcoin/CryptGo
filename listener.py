@@ -69,10 +69,13 @@ def info(dic):
                 find_biggest=int(i)
         return package(backups[str(find_biggest)])
     if dic['type']=='pushtx':
-        blockchain.add_transaction(dic['tx'])
+        #blockchain.add_transaction(dic['tx'])
+        #append this transaction to the list of suggested transactions.
+        blockchain.push_appendDB('suggested_transactions.db', dic['tx'])
     if dic['type']=='pushblock':
-        blockchain.chain_push(dic['block'])
-
+        #blockchain.chain_push(dic['block'])
+        #append this block to the list of suggested blocks.
+        blockchain.push_appendDB('suggested_blocks.db', dic['block'])
 def tradeChain(dic):
     print('dic: '+str(dic))
     if dic['type']=='tx':
