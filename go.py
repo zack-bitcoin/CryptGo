@@ -100,10 +100,15 @@ def nextTurnCheck(i, state):
         pubkey=board['pubkey_black']
     if board['move_number'] != i['move_number']:
         return False
-    if not pt.ecdsa_verify(blockchain.message2signObject(i, nextturn_sig_list), i['signature'], pubkey):
-        print('i: ' +str(i))
-        print('state: ' +str(state))
-        print('14')
+    print('pubkey: ' +str(pubkey))
+    try:#so that invalid pubkeys don't break anything.
+        if not pt.ecdsa_verify(blockchain.message2signObject(i, nextturn_sig_list), i['signature'], pubkey):
+            print('i: ' +str(i))
+            print('state: ' +str(state))
+            print('14')
+            return False
+    except:
+        print('invalid pubkey error')
         return False
     n=next_board(copy.deepcopy(board), i['where'], state['length'])
     if (len(n['black'])+len(n['white']))<=(len(board['black'])+len(board['white'])):#if it kills, then it lives
@@ -117,11 +122,11 @@ def winGameCheck(tx, state):
         return False
     return True
 def newGameCheck(i, state):
-    if 'pubkey_black' not in i.keys():
-        print('badly formated newgame')
+    if 'pubkey_black' not in i.keys() or type(i['pubkey_black'])!=type('string') or len(i['pubkey_black'])!=130:
+        print('badly formated newgame black pubkey')
         return False
-    if 'pubkey_white' not in i.keys():
-        print('badly formated newgame')
+    if 'pubkey_white' not in i.keys() or type(i['pubkey_white'])!=type('string') or len(i['pubkey_white'])!=130:
+        print('badly formated newgame white pubkey')
         return False
     if not blockchain.enough_funds(state, i['pubkey_black'], 25000):
         print('you need at least 1/4 of a CryptGo coin in order to play.')
