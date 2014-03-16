@@ -114,7 +114,7 @@ def board_spot(j, i, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, priv
         if dot_spot(s, i, j):
             img=dot_txt
         if True:
-            out=out.format('''<form style='display:inline;\n margin:0;\n padding:0;' name="play_a_move" action="/home" method="POST"><input type="image" src="{}" name="move" height="{}"><input type="hidden" name="move" value="{},{}"><input type="hidden" name="game" value="{}"><input type="hidden" name="privkey" value="{}"></form>{}'''.format(txt2src(img), str(board_size/19), str(j), str(i), board['game_name'], privkey,'{}'))
+            out=out.format('''<form style='display:inline;\n margin:0;\n padding:0;' name="play_a_move" action="/game" method="POST"><input type="image" src="{}" name="move" height="{}"><input type="hidden" name="move" value="{},{}"><input type="hidden" name="game" value="{}"><input type="hidden" name="privkey" value="{}"></form>{}'''.format(txt2src(img), str(board_size/19), str(j), str(i), board['game_name'], privkey,'{}'))
         else:
             out=out.format(hex2htmlPicture(img))
     return out
@@ -141,6 +141,8 @@ def page1():
 def home(dic):
     if 'BrainWallet' in dic:
         dic['privkey']=pt.sha256(dic['BrainWallet'])
+    elif 'privkey' not in dic:
+        return "<p>You didn't type in your brain wallet.</p>"
     privkey=dic['privkey']
     pubkey=pt.privtopub(dic['privkey'])
     def clean_state():
@@ -178,6 +180,7 @@ def home(dic):
         <input type="text" name="amount" value="amount to spend">
         <input type="hidden" name="privkey" value="{}">'''.format(privkey)))    
     s=easyForm('/home', 'Refresh', '''    <input type="hidden" name="privkey" value="{}">'''.format(privkey))
+    out=out.format(s)
     out=out.format("<p>You are currently watching these games: {}</p>{}".format(str(active_games),"{}"))
     out=out.format(easyForm('/game', 'Play games', '''<input type="hidden" name="privkey" value="{}">'''.format(privkey)))
 
@@ -227,6 +230,8 @@ def game(dic):
     if 'amount' not in state[pubkey]:
         state[pubkey]['amount']=0
     out=out.format('<p>current balance is: ' +str(state[pubkey]['amount']/100000.0)+'</p>{}')        
+    s=easyForm('/game', 'refresh', '''    <input type="hidden" name="privkey" value="{}">'''.format(privkey))
+    out=out.format(s)
     s=easyForm('/home', 'main menu', '''    <input type="hidden" name="privkey" value="{}">'''.format(privkey))
     out=out.format(s)
     for game in active_games:
@@ -339,7 +344,7 @@ function refreshPage () {
 //save y position
 localStorage.scrollTop = window.scrollY
 // no reload instead posting a hidden form
-document.getElementsByName("second")[0].submit()
+document.getElementsByName("first")[0].submit()
 }
 
 window.onload = function () {

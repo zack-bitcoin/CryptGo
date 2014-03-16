@@ -100,7 +100,6 @@ def nextTurnCheck(i, state):
         pubkey=board['pubkey_black']
     if board['move_number'] != i['move_number']:
         return False
-    print('pubkey: ' +str(pubkey))
     try:#so that invalid pubkeys don't break anything.
         if not pt.ecdsa_verify(blockchain.message2signObject(i, nextturn_sig_list), i['signature'], pubkey):
             print('i: ' +str(i))

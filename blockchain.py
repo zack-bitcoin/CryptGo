@@ -114,6 +114,7 @@ def probability(p, func):
         return func
 def getblockcount():
     global count_value
+    global count_timer
     if time.time()-count_timer<60:
         return count_value
     try:

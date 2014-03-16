@@ -29,14 +29,26 @@ You can get free coins by emailing zack.bitcoin at gmail dot com and he will sen
 
 ##Mining go-coins===
 
+####Why do moves get deleted
+
+There should be only one situation left where moves get deleted. If you make a move at the same time that you mine a block, both with the same brainwallet, then either your move wont happen, or your block wont be accepted. This is only an issue when the number of miners is very small. When the difficulty gets high enough, this problem will almost disappear. 
+
+For now I suggest using a different brain wallet for mining and for playing go. Send your money from mining to a different address, and use the different address to play go.
+
+####optimizing your miner
+
 In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 10 and 50 seem to work pretty well for mining. Optimal number depends a lot on connection speed, and the power of your CPU.
-When I am playing go, I keep this number between 0 and 5. I can see moves more quickly that way.
 
 If the number is too high, then all the blocks you mine will get orphaned. If the number is too low, then you will waste all your time talking to other miners instead of mining blocks.
 
 When the system is stable, it should take 1 minute per block. In this situation you might want to experiment with bigger numbers like 60 for faster mining speed.
 
 When lots of people are joining the system, block time could only take 20 seconds, or less. In this situation, you want a very low number, like 5, otherwise you will only mine orphans.
+
+####further miner optimizations
+
+You could delete print statements in the code, or you could re-organize the steps I do things in.
+someone needs to port cgminer for our situation.
 
 ##External IP will allow you to route transactions around the network====
 
@@ -48,11 +60,11 @@ When lots of people are joining the system, block time could only take 20 second
 
      python quick_listen.py
 
-*Tell zack-bitcoin about your (IP or .onion) and port, and he will hard-code it into the gocoin program.
+*Tell zack-bitcoin about your (IP or .onion) and port, and he will hard-code it into CryptGo
 
 *You should be able to control relevent ports from in the config file.
 
-*Large amounts of gocoin will be awarded on a donation basis according to the percentage of the network that you support.
+*Large amounts of CryptGo will be awarded on a donation basis according to the percentage of the network that you support.
 
 ##Using external IP===
 
@@ -100,21 +112,21 @@ privoxy config file needs a line uncommented. In my config file, the line was at
 
 If you have ideas about these things, or if you want me to hurry up with one of them, or if you want to add an idea to this list, please email me zack.bitcoin at gmail dot com.
 
--javascript html style
-
-*auto-refresh the game whenever transactions.db changes, so you don't have to hit the refresh button over and over. (I think a solution to this will involve javascript.)
+####javascript html style
 
 *a web wallet so that we don't have to install python
 
 *an easy way to start a game with a handicap (CryptGo already supports this, we just need a user-interface.)
 
--alt-coin issues
+####alt-coin issues
 
 *port cgminer for CryptGo, to protect the system from 51%
 
+*maybe we should merge-mine against a bigger currency.
+
 *NatPNP/UPNP for automatic port forwarding so that more people can help connect the network together.
 
--go 
+####go 
 
 *The ability to bet on other people's games.
 
