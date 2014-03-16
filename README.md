@@ -20,9 +20,7 @@ To look at the gui, send you browser to:
 
 http://localhost:8090
 
-You own at least 1/4 of one block reward. Black is the one who pays this, and black gets it back when the game is over. 
-
-You can get free coins by emailing zack.bitcoin at gmail dot com and he will send you some.
+You own at least 1/4 of one block reward in order to play go. Black is the one who pays this, and black gets it back when the game is over. 
 
 
 ####You can play go now. You don't have to read below this line. It is only for people who want to make money.====
@@ -37,13 +35,13 @@ For now I suggest using a different brain wallet for mining and for playing go. 
 
 ####optimizing your miner
 
-In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 10 and 50 seem to work pretty well for mining. Optimal number depends a lot on connection speed, and the power of your CPU.
+In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 100 and 1000 seem to work pretty well for mining. Optimal number depends a lot on connection speed, and the power of your CPU.
 
 If the number is too high, then all the blocks you mine will get orphaned. If the number is too low, then you will waste all your time talking to other miners instead of mining blocks.
 
-When the system is stable, it should take 1 minute per block. In this situation you might want to experiment with bigger numbers like 60 for faster mining speed.
+When the system is stable, it should take 1 minute per block. In this situation you might want to experiment with bigger numbers for faster mining speed.
 
-When lots of people are joining the system, block time could only take 20 seconds, or less. In this situation, you want a very low number, like 5, otherwise you will only mine orphans.
+When lots of people are joining the system, block time could only take 20 seconds, or less. In this situation, you want a lower number, otherwise you will only mine orphans.
 
 ####further miner optimizations
 
@@ -65,10 +63,6 @@ someone needs to port cgminer for our situation.
 *You should be able to control relevent ports from in the config file.
 
 *Large amounts of CryptGo will be awarded on a donation basis according to the percentage of the network that you support.
-
-##Using external IP===
-
-port numbers are controlled by the config.py file.
 
 Warning for TOR users! sometimes TOR's default IPs are 9050/9051, other times they are 9150/9151
 
@@ -126,9 +120,13 @@ If you have ideas about these things, or if you want me to hurry up with one of 
 
 *NatPNP/UPNP for automatic port forwarding so that more people can help connect the network together.
 
+*automagically rank peers, so that you don't waste time talking to poorly connected peers. Also for filtering out adversaries.
+
+*automagically share .onion or IP with peers.
+
 ####go 
 
-*The ability to bet on other people's games.
+*the ability to bet on games.
 
 *the ability to re-play old games
 

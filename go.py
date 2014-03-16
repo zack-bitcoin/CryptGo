@@ -180,6 +180,9 @@ def newGameCheck(i, state):
         print('i: ' +str(i))
         print('signature error')
         return False
+    if i['amount']>0 and 'signature_white' not in i:
+        print('both people need to consent, if you want to bet')
+        return False
     if i['amount']>0 and not pt.ecdsa_verify(sign, i['signature_white'], pubkey_white):
         print('signature error 2')
         return False

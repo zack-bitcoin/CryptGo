@@ -3,11 +3,6 @@ import string,cgi,time, json, random, copy, pickle, os, config
 import blockchain, state_library, go
 import pybitcointools as pt
 PORT=config.gui_port
-
-#privkey=pt.sha256("Brain Wallet Here")
-#pubkey=pt.privtopub(privkey)
-#state=state_library.current_state()
-#my_count=state[pubkey]['count']
 win_list=['game_name', 'id']
 spend_list=blockchain.spend_list
 def spend(amount, pubkey, privkey, to_pubkey, state):
@@ -31,12 +26,7 @@ def newgame(opponent, name, pubkey_mine, privkey, state, size=19, amount=0):
     tx={'type':'newGame', 'game_name':name, 'id':pubkey_mine, 'pubkey_white':opponent, 'pubkey_black':pubkey_mine, 'whos_turn':'black', 'time':5, 'white':[], 'black':[], 'size':size, 'amount':amount}
     easy_add_transaction(tx, go.newgame_sig_list, privkey, state)
 def move(game_name, location, pubkey, privkey, state):
-#    state=state_library.current_state()
     board=state[game_name]
-#    print('location: ' +str(location))
-#    txs=blockchain.load_transactions()
-#    txs=filter(lambda x: 'game_name' in x, txs)
-#    game_txs=filter(lambda x: x['game_name']==game_name, txs)
     tx_orig={'type':'nextTurn', 'id':pubkey, 'game_name':game_name, 'where':location, 'move_number':board['move_number']}#+len(game_txs)}
     easy_add_transaction(tx_orig, go.nextturn_sig_list, privkey, state)
 def easy_add_transaction(tx_orig, sign_over, privkey, state):
@@ -154,7 +144,7 @@ def home(dic):
     state=clean_state()
     if 'do' in dic.keys():
         if dic['do']=='newGame':
-            a=newgame(dic['partner'], dic['game'], pubkey, privkey, state, dic['size'], dic['amount'])
+            newgame(dic['partner'], dic['game'], pubkey, privkey, state, dic['size'])
             active_games.append(dic['game'])
         if dic['do']=='joinGame':
             active_games.append(dic['game'])
@@ -195,7 +185,6 @@ def home(dic):
     <input type="text" name="game" value="unique game name">
     <input type="text" name="partner" value="put your partners address here.">
     <input type="text" name="size" value="board size (9, 13, 19 are popular)">
-    <input type="text" name="amount" value="amount you want to bet on this game">
     '''.format(privkey)))
     return out
     
@@ -278,12 +267,6 @@ half_black_txt='iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAAL
 half_white_txt='iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAIAAABv85FHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gMCFDo4H80I7wAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAABTSURBVAjXY/S448HAwMDAwBAiG/Jj4Q+OeI41j9dARFggogxIAMJd83gNEwNuwISmCVk3y4+FP5CFkLksHPEcyBLIXCa4q9AAAbewQJQg+wRuEgBisR8X0r+9ngAAAABJRU5ErkJggg=='
 def txt2src(txt):
     return "data:image/png;base64,"+txt
-#white=hex2htmlPicture(white_txt)
-#dot=hex2htmlPicture(dot_txt)
-#empty=hex2htmlPicture(empty_txt)
-#black=hex2htmlPicture(black_txt)
-#half_white=hex2htmlPicture(half_white_txt)
-#half_black=hex2htmlPicture(half_black_txt)
 def fs_load():
     try:
         out=pickle.load(open(database, 'rb'))
@@ -313,7 +296,6 @@ class MyHandler(BaseHTTPRequestHandler):
                self.end_headers()
                self.wfile.write(f.read())
                f.close()
-               #document.location.refresh(true)
             else:
                self.send_response(200)
                self.send_header('Content-type',    'text/html')
@@ -327,7 +309,6 @@ class MyHandler(BaseHTTPRequestHandler):
          self.send_error(404,'File Not Found: %s' % self.path)
    def do_POST(self):
             print("path: " + str(self.path))
-#         try:
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))    
             print(ctype)
             if ctype == 'multipart/form-data' or ctype=='application/x-www-form-urlencoded':    

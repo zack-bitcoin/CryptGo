@@ -2,7 +2,7 @@ import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time,
 import pybitcointools as pt
 import state_library
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=290900-1224#1220
+genesisbitcoin=290917-1224#1220
 chain=[genesis]
 chain_db='chain.db'
 transactions_database='transactions.db'
@@ -44,6 +44,7 @@ def add_transactions(txs):#to local pool
     #This function is order txs**2, that is risky
     txs_orig=copy.deepcopy(txs)
     count=0
+    print('txs: ' +str(txs_orig))
     for tx in sorted(txs_orig, key=lambda x: x['count']):
         if add_transaction(tx):
             count+=1
@@ -69,7 +70,7 @@ def chain_push(block):
         state['length']+=1
         state['recent_hash']=block['sha']
         state_library.save_state(state)
-        if block['length']%10==0:
+        if block['length']%10==0 and block['length']>11:
             state_library.backup_state(state)
         txs=load_transactions()
         reset_transactions()
@@ -86,7 +87,7 @@ def shorten_chain_db(new_length):
     i=0
     for line in lines:
         a=line2dic(line)
-        if a['length']<=new_length and a['length']>new_length-1500:
+        if a['length']<new_length and a['length']>new_length-1500:
             f.write(line)
     f.close()
 def chain_unpush():
@@ -380,7 +381,7 @@ def spend_check(tx, state):
     return True
 def send_command(peer, command):
 #    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-    command['version']=3
+    command['version']=4
     url=peer.format(package(command))
     print('in send command')
     time.sleep(1)#so we don't DDOS the networking computers which we all depend on.
