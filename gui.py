@@ -159,7 +159,10 @@ def home(dic):
         if dic['do']=='deleteGame':
             active_games.remove(dic['game'])
         if dic['do']=='spend':
-            spend(float(dic['amount']), pubkey, privkey, dic['to'], state)
+            try:
+                spend(float(dic['amount']), pubkey, privkey, dic['to'], state)
+            except:
+                pass
         state=clean_state()
     if 'move' in dic.keys():
         string=dic['move'].split(',')
@@ -231,7 +234,7 @@ def hex2htmlPicture(string, size):
 def newline():
     return '''<br />
 {}'''
-empty_page='<html><body>{}</body></html>'
+empty_page='''<html><head></head><body>{}</body></html>'''
 initial_db={}
 database='tags.db'
 board_size=500
@@ -304,9 +307,28 @@ class MyHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
             dic=fs2dic(fs)
-            
+            jan_script='''
+<head><script>
+function refreshPage () {
+//save y position
+localStorage.scrollTop = window.scrollY
+// no reload instead posting a hidden form
+document.getElementsByName("first")[0].submit()
+}
+
+window.onload = function () {
+
+//setting position if available
+if(localStorage.scrollTop != undefined) {
+window.scrollTo(0, localStorage.scrollTop);    
+}
+//refresh loop
+setTimeout(refreshPage, 3000);
+}
+</script></head>
+'''
             if self.path=='/home':
-                self.wfile.write(home(dic))
+                self.wfile.write(home(dic).replace('<head></head>', jan_script))
             else:
                 print('ERROR: path {} is not programmed'.format(str(self.path)))
 def main():

@@ -44,13 +44,15 @@ def add_transactions(txs):#to local pool
     #This function is order txs**2, that is risky
     txs_orig=copy.deepcopy(txs)
     count=0
-    for tx in txs_orig:
+    for tx in sorted(txs_orig, key=lambda x: x['count']):
         if add_transaction(tx):
             count+=1
             txs.remove(tx)
     if count>0:
         add_transactions(txs)
 def add_transaction(tx):#to local pool
+    if tx['type']=='mint':
+        return False
     transactions=load_transactions()
     state=state_library.current_state()
     if verify_transactions(transactions+[tx], state)['bool']:
@@ -94,7 +96,7 @@ def chain_unpush():
     state=state_library.current_state()
     length=state['length']
     state=state_library.recent_backup()
-    for i in length-state['length']:
+    for i in range(length-state['length']):
         orphaned_txs+=chain[-1-i]['transactions']
 #    chain=chain[:-1]
     #reset_chain() instead, just back up to the nearest save.
