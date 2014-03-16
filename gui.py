@@ -146,29 +146,21 @@ def home(dic):
     def clean_state():
         transactions=blockchain.load_transactions()
         state=state_library.current_state()
-        return blockchain.verify_transactions(transactions, state)['newstate']
+        a=blockchain.verify_transactions(transactions, state)
+        print('a: ' +str(a))
+        return a['newstate']
     state=clean_state()
     if 'do' in dic.keys():
         if dic['do']=='newGame':
             a=newgame(dic['partner'], dic['game'], pubkey, privkey, state, dic['size'], dic['amount'])
             active_games.append(dic['game'])
-        if dic['do']=='winGame':
-            wingame(dic['game'], pubkey, privkey, state)
         if dic['do']=='joinGame':
             active_games.append(dic['game'])
-        if dic['do']=='deleteGame':
-            active_games.remove(dic['game'])
         if dic['do']=='spend':
             try:
                 spend(float(dic['amount']), pubkey, privkey, dic['to'], state)
             except:
                 pass
-        state=clean_state()
-    if 'move' in dic.keys():
-        string=dic['move'].split(',')
-        i=int(string[0])
-        j=int(string[1])
-        move(dic['game'], [i, j], pubkey, privkey, state)
         state=clean_state()
     out=empty_page
     out=out.format('<p>your address is: ' +str(pubkey)+'</p>{}')
@@ -185,32 +177,10 @@ def home(dic):
         <input type="text" name="to" value="address to give to">
         <input type="text" name="amount" value="amount to spend">
         <input type="hidden" name="privkey" value="{}">'''.format(privkey)))    
-    s=easyForm('/home', 'Refresh boards ------[You have to click this button a lot so I am making it easy to click]----------', '''    <input type="hidden" name="privkey" value="{}">'''.format(privkey))
-    out=out.format(s)
-    out=out.format(s)
-    for game in active_games:
-        out=out.format("<h1>"+str(game)+"</h1>{}")
-        if game in state:
-            out=out.format('<h1>Timer: ' + str(state[game]['last_move_time']+state[game]['time']-state['length'])+' </h1>{}')
-        if game in state.keys():
-            in_last_block=state[game]
-            out=board(out, state, game, privkey)
-            out=out.format(easyForm('/home', 'win this game', '''
-            <input type="hidden" name="do" value="winGame">
-            <input type="hidden" name="privkey" value="{}">
-            <input type="hidden" name="game"  value="{}">'''.format(privkey, game)))
-            out=out.format(easyForm('/home', 'leave this game', '''
-            <input type="hidden" name="do" value="deleteGame">
-            <input type="hidden" name="privkey" value="{}">
-            <input type="hidden" name="game"  value="{}">'''.format(privkey, game)))
-        else:
-            out=out.format("<p>this game does not yet exist</p>{}")
-            out=out.format(easyForm('/home', 'delete this game', '''
-            <input type="hidden" name="do" value="deleteGame">
-            <input type="hidden" name="privkey" value="{}">
-            <input type="hidden" name="game"  value="{}">'''.format(privkey,game)))
-    out=out.format(s)
-    out=out.format(s)
+    s=easyForm('/home', 'Refresh', '''    <input type="hidden" name="privkey" value="{}">'''.format(privkey))
+    out=out.format("<p>You are currently watching these games: {}</p>{}".format(str(active_games),"{}"))
+    out=out.format(easyForm('/game', 'Play games', '''<input type="hidden" name="privkey" value="{}">'''.format(privkey)))
+
     out=out.format(easyForm('/home', 'Join Game', '''
     <input type="hidden" name="do" value="joinGame">
     <input type="hidden" name="privkey" value="{}">
@@ -224,6 +194,62 @@ def home(dic):
     <input type="text" name="size" value="board size (9, 13, 19 are popular)">
     <input type="text" name="amount" value="amount you want to bet on this game">
     '''.format(privkey)))
+    return out
+    
+def game(dic):
+    if 'BrainWallet' in dic:
+        dic['privkey']=pt.sha256(dic['BrainWallet'])
+    privkey=dic['privkey']
+    pubkey=pt.privtopub(dic['privkey'])
+    def clean_state():
+        transactions=blockchain.load_transactions()
+        state=state_library.current_state()
+        return blockchain.verify_transactions(transactions, state)['newstate']
+    state=clean_state()
+    if 'do' in dic.keys():
+        if dic['do']=='winGame':
+            wingame(dic['game'], pubkey, privkey, state)
+        if dic['do']=='deleteGame':
+            active_games.remove(dic['game'])
+        state=clean_state()
+    if 'move' in dic.keys():
+        string=dic['move'].split(',')
+        i=int(string[0])
+        j=int(string[1])
+        move(dic['game'], [i, j], pubkey, privkey, state)
+        state=clean_state()
+    out=empty_page
+    out=out.format('<p>your address is: ' +str(pubkey)+'</p>{}')
+    print('state: ' +str(state))
+    out=out.format('<p>current block is: ' +str(state['length'])+'</p>{}')
+    if pubkey not in state:
+        state[pubkey]={'amount':0}
+    if 'amount' not in state[pubkey]:
+        state[pubkey]['amount']=0
+    out=out.format('<p>current balance is: ' +str(state[pubkey]['amount']/100000.0)+'</p>{}')        
+    s=easyForm('/home', 'main menu', '''    <input type="hidden" name="privkey" value="{}">'''.format(privkey))
+    out=out.format(s)
+    for game in active_games:
+        out=out.format("<h1>"+str(game)+"</h1>{}")
+        if game in state:
+            out=out.format('<h1>Timer: ' + str(state[game]['last_move_time']+state[game]['time']-state['length'])+' </h1>{}')
+        if game in state.keys():
+            in_last_block=state[game]
+            out=board(out, state, game, privkey)
+            out=out.format(easyForm('/game', 'win this game', '''
+            <input type="hidden" name="do" value="winGame">
+            <input type="hidden" name="privkey" value="{}">
+            <input type="hidden" name="game"  value="{}">'''.format(privkey, game)))
+            out=out.format(easyForm('/game', 'leave this game', '''
+            <input type="hidden" name="do" value="deleteGame">
+            <input type="hidden" name="privkey" value="{}">
+            <input type="hidden" name="game"  value="{}">'''.format(privkey, game)))
+        else:
+            out=out.format("<p>this game does not yet exist</p>{}")
+            out=out.format(easyForm('/game', 'delete this game', '''
+            <input type="hidden" name="do" value="deleteGame">
+            <input type="hidden" name="privkey" value="{}">
+            <input type="hidden" name="game"  value="{}">'''.format(privkey,game)))
     return out
 def hex2htmlPicture(string, size):
     return '<img height="{}" src="data:image/png;base64,{}">{}'.format(str(size), string, '{}')
@@ -313,7 +339,7 @@ function refreshPage () {
 //save y position
 localStorage.scrollTop = window.scrollY
 // no reload instead posting a hidden form
-document.getElementsByName("first")[0].submit()
+document.getElementsByName("second")[0].submit()
 }
 
 window.onload = function () {
@@ -328,7 +354,9 @@ setTimeout(refreshPage, 3000);
 </script></head>
 '''
             if self.path=='/home':
-                self.wfile.write(home(dic).replace('<head></head>', jan_script))
+                self.wfile.write(home(dic))
+            if self.path=='/game':
+                   self.wfile.write(game(dic).replace('<head></head>', jan_script))
             else:
                 print('ERROR: path {} is not programmed'.format(str(self.path)))
 def main():

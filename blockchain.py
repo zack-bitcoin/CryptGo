@@ -2,7 +2,7 @@ import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time,
 import pybitcointools as pt
 import state_library
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=290788-1224#1220
+genesisbitcoin=290800-1224#1220
 chain=[genesis]
 chain_db='chain.db'
 transactions_database='transactions.db'
@@ -126,6 +126,7 @@ def getblockcount():
         URL=urllib.urlopen(peer)
         URL=URL.read()
         count_value=int(URL)
+    count_timer=time.time()
     return count_value
 hash_dic={}
 def getblockhash(count):

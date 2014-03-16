@@ -122,10 +122,10 @@ def winGameCheck(tx, state):
         return False
     return True
 def newGameCheck(i, state):
-    if 'pubkey_black' not in i.keys() or type(i['pubkey_black'])!=type('string') or len(i['pubkey_black'])!=130:
-        print('badly formated newgame black pubkey')
-        return False
-    if 'pubkey_white' not in i.keys() or type(i['pubkey_white'])!=type('string') or len(i['pubkey_white'])!=130:
+    if 'pubkey_black' not in i.keys():
+        i['pubkey_black']=i['id']
+    if 'pubkey_white' not in i.keys() or type(i['pubkey_white']) not in [type('string'), type(u'unicode')] or len(i['pubkey_white'])!=130:
+        print('type: ' +str(type(i['pubkey_white'])))
         print('badly formated newgame white pubkey')
         return False
     if not blockchain.enough_funds(state, i['pubkey_black'], 25000):
