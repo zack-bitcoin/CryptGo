@@ -505,7 +505,13 @@ def peer_check(peer):
     ahead=int(block_count['length'])-int(state['length'])
     if ahead < 0:
         chain=copy.deepcopy(load_chain())
-        pushblock(chain[int(block_count['length'])+1],[peer])
+        print('len chain: ' +str(len(chain)))
+        print('length: ' +str(int(block_count['length'])+1))
+        print('state len: ' +str(state['length']))
+        try:
+            pushblock(chain[int(block_count['length'])+1],[peer])
+        except:
+            pass
         probability(0.2, chain_unpush())
         return []
     if ahead == 0:#if we are on the same block, ask for any new txs
