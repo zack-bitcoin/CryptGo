@@ -35,9 +35,9 @@ For now I suggest using a different brain wallet for mining and for playing go. 
 
 ####optimizing your miner
 
-In the config file, change the number "hashes_till_check" to a positive integer. For my computer, numbers between 100 and 1000 seem to work pretty well for mining. Optimal number depends a lot on connection speed, and the power of your CPU.
+In the config file, change the number "hashes_till_check" to a positive integer. I am guessing that good numbers are between 10000 and 100000. It depends a lot on your CPU, and internet connection speed. Experiment for best results. If the number is too high, then all the blocks you mine will get orphaned. If the number is too low, then you will waste all your time talking to other miners instead of mining blocks.
 
-If the number is too high, then all the blocks you mine will get orphaned. If the number is too low, then you will waste all your time talking to other miners instead of mining blocks.
+The number defaults to 100, because high numbers interfere with playing go. Probably 100 is too conservative. Feel free to experiment, and tell me what works best for you.
 
 When the system is stable, it should take 1 minute per block. In this situation you might want to experiment with bigger numbers for faster mining speed.
 
