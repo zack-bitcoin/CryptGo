@@ -45,6 +45,8 @@ def add_transactions(txs):#to local pool
     txs_orig=copy.deepcopy(txs)
     count=0
     print('txs: ' +str(txs_orig))
+    if 'error' in txs:
+        return
     for tx in sorted(txs_orig, key=lambda x: x['count']):
         if add_transaction(tx):
             count+=1
