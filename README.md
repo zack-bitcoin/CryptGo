@@ -1,4 +1,4 @@
-##INSTALL==WARNING!!! This currency will be rebooted sometime in the next 48 hours. the money is all worthless. I will put money into the brainwallet: "password" for experimentation.====
+##INSTALL=======
 
 You need to have python installed: (linux and mac probably already have python)
 
