@@ -432,6 +432,8 @@ def mine_1(reward_pubkey, peers, times):
         for tx in transactions:
             if tx['id']==reward_pubkey:
                 extra+=1
+        if 'count' not in state[reward_pubkey]:
+            state[reward_pubkey]['count']=1
         count=state[reward_pubkey]['count']+extra
         transactions.append({'type':'mint', 'amount':10**5, 'id':reward_pubkey, 'count':count})
         length=state['length']
