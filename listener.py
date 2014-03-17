@@ -61,13 +61,12 @@ def info(dic):
     if dic['type']=='transactions':
         return package(blockchain.load_transactions())
     if dic['type']=='backup_states':
-        backups=state_library.fs_load(state_library.backup_db,{})
-        out={}
-        for i in backups.keys():
+        backups=state_library.fs_load(state_library.backup_db,[])
+        for i in range(len(backups)):
             find_biggest=0
-            if int(i)<int(dic['start']) and int(i)>int(find_biggest):
+            if int(backups[i]['length'])<int(dic['start']) and int(backups[i]['length'])>int(find_biggest):
                 find_biggest=int(i)
-        return package(backups[str(find_biggest)])
+        return package(backups[find_biggest])
     if dic['type']=='pushtx':
         #blockchain.add_transaction(dic['tx'])
         #append this transaction to the list of suggested transactions.

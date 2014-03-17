@@ -521,14 +521,14 @@ def peer_check(peer):
         for push in pushers:
             pushtx(push, [peer])
         return []
-    if ahead>1001:
-        try_state=cmd({'type':'backup_states',
-                   'start': block_count['length']-1000})
-        if type(try_state)==type({'a':'1'}) and 'error' not in state:
-            print('state: ' +str(state))
-            state=try_state
-            state_library.save_state(state)
-        return []
+#    if ahead>1001:
+#        try_state=cmd({'type':'backup_states',
+#                   'start': block_count['length']-1000})
+#        if type(try_state)==type({'a':'1'}) and 'error' not in state:
+#            print('state: ' +str(state))
+#            state=try_state
+#            state_library.save_state(state)
+#        return []
     print("############################## ahead: "+str(ahead))
     start=int(state['length'])-20
     if start<0:
