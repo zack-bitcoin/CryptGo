@@ -91,7 +91,7 @@ def shorten_chain_db(new_length, db_ex=''):
     i=0
     for line in lines:
         a=line2dic(line)
-        if a['length']<new_length and a['length']>new_length-1500:
+        if a['length']<new_length:# and a['length']>new_length-1500:
             f.write(line)
     f.close()
 def chain_unpush(db_ex=''):
@@ -335,6 +335,10 @@ def mine(reward_pubkey, peers, hashes_till_check, db_extention=''):
             for block in a:
                 chain_push(block)
             reset_appendDB('suggested_blocks.db')
+        else:
+            peer_check_all(peers, db_extention)
+            peer_check_all(peers, db_extention)
+            
 def fork_check(newblocks, state):#while we are mining on a forked chain, this check returns True. once we are back onto main chain, it returns false.
     try:
 #        hashes=filter(lambda x: 'prev_sha' in x and x['prev_sha']==state['recent_hash'], newblocks)
@@ -348,6 +352,7 @@ def peer_check_all(peers, db_extention):
     for peer in peers:
         blocks+=peer_check(peer, db_extention)
     for block in blocks:
+        print('$$$$$$$$$$$$$')
         chain_push(block, db_extention)
 
 def pushtx(tx, peers):
@@ -414,9 +419,11 @@ def peer_check(peer, db_ex):
 #            state_library.save_state(state)
 #        return []
     print("############################## ahead: "+str(ahead))
-    if ahead < 20:
-        probability(0.1, chain_unpush(db_ex))
-    start=int(state['length'])-20
+    def f():
+        for i in range(5):
+            chain_unpush(db_ex)
+    probability(0.03, chain_unpush(db_ex))
+    start=int(state['length'])-30
     if start<0:
         start=0
     if ahead>500:
@@ -425,6 +432,7 @@ def peer_check(peer, db_ex):
         end=block_count['length']
     blocks= cmd({'type':'rangeRequest', 
                  'range':[start, end]})
+    print('@@@@@@@@@@@@downloaded blocks')
     if type(blocks)!=type([1,2]):
         return []
     times=1
