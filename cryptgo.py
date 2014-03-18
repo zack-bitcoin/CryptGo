@@ -17,21 +17,18 @@ def kill_processes_using_ports(ports):
             pid = match.group('pid')
             subprocess.Popen(['kill', '-9', pid])
 try:
-    kill_processes_using_ports(['8071','8090'])
-    kill_processes_using_ports(['8071','8090'])
+    kill_processes_using_ports([str(config.listen_port), str(config.gui_port)])
+    kill_processes_using_ports([str(config.listen_port), str(config.gui_port)])
 except:
     #so windows doesn't die
     pass
 if __name__ == '__main__':
-    #8071 appears in another file...
     #the first miner is for finding blocks. the second miner is for playing go and for talking to the network.
-#    blockchain.mine(my_pubkey, config.peers_list, 0)
-#    listener.main(8071)
     todo=[[blockchain.mine, 
-           (my_pubkey, ['http://localhost:8071/info?{}'], 200000, '_miner')],
-          [listener.main, (8071, )],
+           (my_pubkey, ['http://localhost:'+str(config.listen_port)+'/info?{}'], config.hashes_till_check, '_miner')],
+          [listener.main, (config.listen_port, )],
           [blockchain.mine, (my_pubkey, config.peers_list, 0)],
-          [gui.main, (8090, config.brain_wallet)]
+          [gui.main, (config.gui_port, config.brain_wallet)]
           ]
     for i in todo:
         t = threading.Thread(target=i[0], args = i[1])
