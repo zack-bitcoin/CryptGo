@@ -16,10 +16,12 @@ def kill_processes_using_ports(ports):
         if match:
             pid = match.group('pid')
             subprocess.Popen(['kill', '-9', pid])
-
-kill_processes_using_ports(['8071','8090'])
-kill_processes_using_ports(['8071','8090'])
-
+try:
+    kill_processes_using_ports(['8071','8090'])
+    kill_processes_using_ports(['8071','8090'])
+except:
+    #so windows doesn't die
+    pass
 if __name__ == '__main__':
     #8071 appears in another file...
     #the first miner is for finding blocks. the second miner is for playing go and for talking to the network.
