@@ -1,7 +1,7 @@
 peers_list=['http://www.sbb.tc:82/info?{}',
-            'http://162.243.13.112/info?{}',
-            'http://fnsxouwikizbpqtq.onion/info?{}']#add friends!!
-listen_port=80
+            'http://162.243.13.112/info?{}']
+#            'http://fnsxouwikizbpqtq.onion/info?{}']#add friends!!
+listen_port=8071
 gui_port=8090
 brain_wallet="password"#<----if you are mining. this is the brain wallet that gets paid to.
 hashes_till_check=0#this is the number of times that you attempt to find a block before you check to see if any of your peers have found a block.

@@ -2,9 +2,8 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import string,cgi,time, json, random, copy, pickle, os, config
 import blockchain, state_library, go
 import pybitcointools as pt
-PORT=config.gui_port
 win_list=['game_name', 'id']
-spend_list=blockchain.spend_list
+spend_list=go.spend_list
 def spend(amount, pubkey, privkey, to_pubkey, state):
     amount=int(amount*(10**5))
     tx={'type':'spend', 'id':pubkey, 'amount':amount, 'to':to_pubkey}
@@ -38,14 +37,14 @@ def easy_add_transaction(tx_orig, sign_over, privkey, state):
         tx['count']=state[pubkey]['count']
     txs=blockchain.load_transactions()
     my_txs=filter(lambda x: x['id']==pubkey, txs)
-    tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, sign_over), privkey)
+    tx['signature']=pt.ecdsa_sign(go.message2signObject(tx, sign_over), privkey)
     if blockchain.add_transaction(tx):
         blockchain.pushtx(tx, config.peers_list)
         return True
     if 'move_number' in tx:
         for i in range(10):
             tx['move_number']+=1
-            tx['signature']=pt.ecdsa_sign(blockchain.message2signObject(tx, sign_over), privkey)
+            tx['signature']=pt.ecdsa_sign(go.message2signObject(tx, sign_over), privkey)
             if blockchain.add_transaction(tx):
                 blockchain.pushtx(tx, config.peers_list)
                 return True
@@ -124,9 +123,9 @@ def board(out, state, game, privkey):
         for i in range(s):
             out=out.format(board_spot(j, i, not_whos_turn_pubkey, whos_turn_pubkey, pubkey, board, privkey))
     return out
-def page1():
+def page1(default_brainwallet=''):
     out=empty_page
-    out=out.format(easyForm('/home', 'Play Go!', '<input type="text" name="BrainWallet" value="">'))
+    out=out.format(easyForm('/home', 'Play Go!', '<input type="text" name="BrainWallet" value="{}">'.format(default_brainwallet)))
     return out.format('')
 def home(dic):
     if 'BrainWallet' in dic:
@@ -286,7 +285,7 @@ class MyHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type',    'text/html')
             self.end_headers()
-            self.wfile.write(page1())
+            self.wfile.write(page1(default_brain))
             return    
          else : # default: just send the file    
             filepath = self.path[1:] # remove leading '/'    
@@ -347,16 +346,19 @@ setTimeout(refreshPage, 3000);
                    self.wfile.write(game(dic).replace('<head></head>', jan_script))
             else:
                 print('ERROR: path {} is not programmed'.format(str(self.path)))
-def main():
-   try:
-      server = HTTPServer(('', PORT), MyHandler)
-      print 'started httpserver...'
-      server.serve_forever()
-   except KeyboardInterrupt:
-      print '^C received, shutting down server'
-      server.socket.close()
+default_brain=''
+def main(PORT, brain_wallet):
+    global default_brain
+    default_brain=brain_wallet
+    try:
+        server = HTTPServer(('', PORT), MyHandler)
+        print 'started httpserver...'
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print '^C received, shutting down server'
+        server.socket.close()
 if __name__ == '__main__':
-   main()
+    main(config.gui_port, config.brain_wallet)
 
 
 

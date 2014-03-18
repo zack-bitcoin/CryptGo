@@ -11,22 +11,20 @@ def fs_load(database, sort=[]):
     except:
         fs_save(database, sort)#these are list-databases
         return cPickle.load(open(database, 'rb'))      
-def save_state(state):#state contains the positions of every board, and who has how much money.
-    return fs_save(state_db, state)
-def current_state(key=''):#lets make this grab current state from a file, instead of re-computing it.
-#key is for optionally initializing a new id
-    current=fs_load(state_db, empty_state)
-    if key!='' and key not in current:
-        current[key]={'count':1, 'amount':0}
-    return current
-def backup_state(state):
-    backups=fs_load(backup_db, [])
+def ex(db_extention, db):
+    return db.replace('.db', db_extention+'.db')
+def save_state(state, db_extention=""):#state contains the positions of every board, and who has how much money.
+    return fs_save(ex(db_extention, state_db), state)
+def current_state(db_extention=""):
+    return fs_load(ex(db_extention, state_db), empty_state)
+def backup_state(state, db_extention=''):
+    backups=fs_load(ex(db_extention, backup_db), [])
     backups.append(state)
-    fs_save(backup_db, backups)
-def recent_backup():#This deletes the backup that it uses.
-    backups=fs_load(backup_db, [])
+    fs_save(ex(db_extention, backup_db), backups)
+def recent_backup(db_extention=''):#This deletes the backup that it uses.
+    backups=fs_load(ex(db_extention,backup_db), [])
     try:
-        fs_save(backup_db, backups[:-1])
+        fs_save(ex(db_extention, backup_db), backups[:-1])
         return backups[-1]
     except:
         return empty_state

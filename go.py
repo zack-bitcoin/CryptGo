@@ -1,7 +1,140 @@
 import pybitcointools as pt
-import blockchain, copy, state_library
+import copy, state_library
 newgame_sig_list=['id', 'type', 'game_name', 'pubkey_white', 'pubkey_black', 'count', 'whos_turn', 'white', 'time', 'black', 'size', 'amount']
 nextturn_sig_list=['id', 'game_name', 'type', 'count', 'where']
+spend_list=['id', 'amount', 'count', 'to']
+def enough_funds(state, pubkey, enough):
+    if enough==0:
+        return True
+    if pubkey not in state:
+        print('nonexistant people have no money')
+        return False
+    if 'amount' not in state[pubkey]:
+        print('this person has no money')
+        return False
+    funds=state[pubkey]['amount']
+    return funds>=enough
+def verify_count(tx, state):
+    if 'id' not in tx:
+        print('bad input error in verify count')
+        error('here')
+        return False
+    if tx['id'] not in state.keys():
+        state[tx['id']]={'count':1}
+    if 'count' not in tx:
+        print("invalid because we need each tx to have a count")
+        return False
+    if 'count' not in state[tx['id']]:
+        state[tx['id']]['count']=1
+    if 'count' in tx and tx['count']!=state[tx['id']]['count']:
+        return False
+    return True
+def attempt_absorb(tx, state):
+    state=copy.deepcopy(state)
+    state_orig=copy.deepcopy(state)
+    if not verify_count(tx, state):
+       print("invalid because the tx['count'] was wrong")
+       return (state, False)
+    state[tx['id']]['count']+=1
+    types=['spend', 'mint', 'nextTurn', 'newGame', 'winGame']
+    if tx['type'] not in types: 
+        print('tx: ' +str(tx))
+        print("invalid because tx['type'] was wrong")
+        return (state_orig, False)
+    if tx['type']=='mint':
+        if not mint_check(tx, state):
+            print('MINT ERROR')
+            return (state_orig, False)
+        if 'amount' not in state[tx['id']].keys():
+            state[tx['id']]['amount']=0
+        state[tx['id']]['amount']+=tx['amount']
+    if tx['type']=='spend':
+        if not spend_check(tx, state):
+            print('SPEND ERROR')
+            return (state_orig, False)
+        if tx['to'] not in state:
+            print('PUBKEY ERROR')
+            state[tx['to']]={'amount':0}
+        if 'amount' not in state[tx['to']]:
+            state[tx['to']]['amount']=0
+        state[tx['id']]['amount']-=tx['amount']
+        state[tx['to']]['amount']+=tx['amount']
+    if tx['type']=='nextTurn':
+        if not nextTurnCheck(tx, state):
+            print('NEXT TURN ERROR')
+            return (state_orig, False)
+        state[tx['game_name']]=next_board(state[tx['game_name']], tx['where'], state['length'])
+
+#    print('tx: ' +str(tx))
+    if tx['type']=='newGame':
+        if not newGameCheck(tx, state):
+            print('FAILED NEW GAME CHECK')
+            return (state_orig, False)
+        state[tx['game_name']]=new_game(copy.deepcopy(tx))
+        pubkey_black=state[tx['game_name']]['pubkey_black']        
+        print('state: ' +str(state))
+        if pubkey_black not in state:
+            print('newgame error 1')
+            return (state_orig, False)
+        state[pubkey_black]['amount']-=25000#1/4 of mining reward
+	if tx['amount']>0:
+            state[pubkey_black]['amount']-=tx['amount']
+            state[pubkey_white]['amount']-=tx['amount']
+#    print('tx: ' +str(tx))
+    if tx['type']=='winGame':
+        if not winGameCheck(tx, state):
+            print('FAILED WIN GAME CHECK')
+            return (state_orig, False)
+        pubkey_black=state[tx['game_name']]['pubkey_black']
+        state[pubkey_black]['amount']+=25000
+#        print('tx: ' +str(tx))
+        a=state[tx['game_name']]['amount']
+        if a>0:
+            state[tx['id']]['amount']+=a*2
+        state.pop(tx['game_name'])
+    return (state, True)
+def mint_check(tx, state):
+    if tx['amount']>10**5:
+        return False#you can only mint up to 10**5 coins per block
+    return True
+def spend_check(tx, state):
+    if tx['id'] not in state.keys():
+        print("you can't spend money from a non-existant account")
+        return False
+    if 'amount' not in tx:
+        print('how much did you want to spend?')
+        return False
+    if type(tx['amount']) != type(5):
+        print('you can only spend integer amounts of money')
+        return False
+    if tx['amount']<=1000:
+        print('the minimum amount to spend is 1000 base units = 0.01 CryptGo coin.')
+        return False
+    if not enough_funds(state, tx['id'], tx['amount']):
+        print('not enough money to spend in this account')
+        return False
+    if 'signature' not in tx:
+        print("spend transactions must be signed")
+        return False
+        #    try:
+    if not pt.ecdsa_verify(message2signObject(tx, spend_list), tx['signature'], tx['id'] ):
+        print("bad signature")
+        return False
+#    except:
+#        print('Weird error when checking the signature of a transaction')
+#        return False
+    return True
+def message2signObject(tx, keys):
+    out=''
+    for key in sorted(keys):
+        if type(tx[key])==type([1,2]):
+            string=str(key)+':'
+            for i in tx[key]:
+                string+=str(i)+','
+        else:
+            string=str(key)+':'+str(tx[key])+','
+        out+=string
+    return out
 def valid_board(board, move):
     #tells whether this is a valid move to make on this board.
     color=board['whos_turn']
@@ -101,7 +234,7 @@ def nextTurnCheck(i, state):
     if board['move_number'] != i['move_number']:
         return False
     try:#so that invalid pubkeys don't break anything.
-        if not pt.ecdsa_verify(blockchain.message2signObject(i, nextturn_sig_list), i['signature'], pubkey):
+        if not pt.ecdsa_verify(message2signObject(i, nextturn_sig_list), i['signature'], pubkey):
             print('i: ' +str(i))
             print('state: ' +str(state))
             print('14')
@@ -127,7 +260,7 @@ def newGameCheck(i, state):
         print('type: ' +str(type(i['pubkey_white'])))
         print('badly formated newgame white pubkey')
         return False
-    if not blockchain.enough_funds(state, i['pubkey_black'], 25000):
+    if not enough_funds(state, i['pubkey_black'], 25000):
         print('you need at least 1/4 of a CryptGo coin in order to play.')
         return False
     if 'game_name' not in i.keys():
@@ -175,7 +308,7 @@ def newGameCheck(i, state):
     if type(i['amount'])!=type(10):
         print('bet error')
         return False
-    sign=blockchain.message2signObject(i, newgame_sig_list)
+    sign=message2signObject(i, newgame_sig_list)
     if not pt.ecdsa_verify(sign, i['signature'], i['pubkey_black']):
         print('i: ' +str(i))
         print('signature error')
