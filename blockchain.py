@@ -102,7 +102,10 @@ def chain_unpush(db_ex=''):
     length=state['length']
     state=state_library.recent_backup(db_ex)
     for i in range(length-state['length']):
-        orphaned_txs+=chain[-1-i]['transactions']
+        try:
+            orphaned_txs+=chain[-1-i]['transactions']
+        except:
+            pass
 #    chain=chain[:-1]
     #reset_chain() instead, just back up to the nearest save.
     shorten_chain_db(state['length'], db_ex)
@@ -411,6 +414,8 @@ def peer_check(peer, db_ex):
 #            state_library.save_state(state)
 #        return []
     print("############################## ahead: "+str(ahead))
+    if ahead < 20:
+        probability(0.1, chain_unpush(db_ex))
     start=int(state['length'])-20
     if start<0:
         start=0

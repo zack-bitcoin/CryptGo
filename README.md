@@ -6,14 +6,9 @@ http://www.python.org/download/
 
 ##RUN======
 
-to download the chain, and to broadcast your moves, you need this running:
+you need this running:
 
 python cryptgo.py
-
-To play go, you need the gui:
-
-python gui.py
-
 
 
 To look at the gui, send you browser to: 
@@ -27,23 +22,7 @@ You own at least 1/4 of one block reward in order to play go. Black is the one w
 
 ##Mining go-coins===
 
-####Why do moves get deleted
-
-There should be only one situation left where moves get deleted. If you make a move at the same time that you mine a block, both with the same brainwallet, then either your move wont happen, or your block wont be accepted. This is only an issue when the number of miners is very small. When the difficulty gets high enough, this problem will almost disappear. 
-
-For now I suggest using a different brain wallet for mining and for playing go. Send your money from mining to a different address, and use the different address to play go.
-
-####optimizing your miner
-
-In the config file, change the number "hashes_till_check" to a positive integer. I am guessing that good numbers are between 10000 and 100000. It depends a lot on your CPU, and internet connection speed. Experiment for best results. If the number is too high, then all the blocks you mine will get orphaned. If the number is too low, then you will waste all your time talking to other miners instead of mining blocks.
-
-The number defaults to 100, because high numbers interfere with playing go. Probably 100 is too conservative. Feel free to experiment, and tell me what works best for you.
-
-When the system is stable, it should take 1 minute per block. In this situation you might want to experiment with bigger numbers for faster mining speed.
-
-When lots of people are joining the system, block time could only take 20 seconds, or less. In this situation, you want a lower number, otherwise you will only mine orphans.
-
-####further miner optimizations
+####miner optimizations
 
 You could delete print statements in the code, or you could re-organize the steps I do things in.
 someone needs to port cgminer for our situation.
@@ -110,7 +89,7 @@ If you have ideas about these things, or if you want me to hurry up with one of 
 
 *a web wallet so that we don't have to install python
 
-*an easy way to start a game with a handicap (CryptGo already supports this, we just need a user-interface.)
+*an easy way to start a game with a handicap. CryptGo already supports this, we just need a user-interface. This interface should also allow betting money against the other person.
 
 ####alt-coin issues
 
