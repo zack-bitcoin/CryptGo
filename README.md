@@ -17,6 +17,7 @@ http://localhost:8090
 
 You own at least 1/4 of one block reward in order to play go. Black is the one who pays this, and black gets it back when the game is over. 
 
+There is probably no one else running the software right now, so when you start it up, you have to set the difficulty. There is a number near the top of blockchain.py that you have to change. The comment explains the details.
 
 ####You can play go now. You don't have to read below this line. It is only for people who want to make money.====
 
