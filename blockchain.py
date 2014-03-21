@@ -2,7 +2,7 @@ import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time,
 import pybitcointools as pt
 import state_library
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=290917-1224#1220
+genesisbitcoin=291725-1170#1220
 #If you are the first person to start mining this currency, you should probably change 290917 to whatever the current bitcoin block count it.
 chain=[genesis]
 chain_db='chain.db'
@@ -47,7 +47,7 @@ def add_transactions(txs, db_ex=''):#to local pool
     #This function is order txs**2, that is risky
     txs_orig=copy.deepcopy(txs)
     count=0
-    print('txs: ' +str(txs_orig))
+#    print('txs: ' +str(txs_orig))
     if 'error' in txs:
         return
     for tx in sorted(txs_orig, key=lambda x: x['count']):
@@ -396,7 +396,8 @@ def peer_check(peer, db_ex):
             pushblock(chain[int(block_count['length'])+1],[peer])
         except:
             pass
-        probability(0.2, chain_unpush(db_ex))
+        if db_ex=='':
+            probability(0.2, chain_unpush(db_ex))
         return []
     if ahead == 0:#if we are on the same block, ask for any new txs
         print('ON SAME BLOCK')
