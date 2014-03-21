@@ -424,7 +424,7 @@ def peer_check(peer, db_ex):
     def f():
         for i in range(5):
             chain_unpush(db_ex)
-    probability(0.03, chain_unpush(db_ex))
+#    probability(0.03, chain_unpush(db_ex))
     start=int(state['length'])-30
     if start<0:
         start=0
