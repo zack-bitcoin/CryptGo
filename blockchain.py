@@ -338,7 +338,7 @@ def mine(reward_pubkey, peers, hashes_till_check, db_extention=''):
             reset_appendDB('suggested_blocks.db')
         else:
             peer_check_all(peers, db_extention)
-            peer_check_all(peers, db_extention)
+            time.sleep(2)
             
 def fork_check(newblocks, state):#while we are mining on a forked chain, this check returns True. once we are back onto main chain, it returns false.
     try:
