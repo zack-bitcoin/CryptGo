@@ -2,7 +2,7 @@ import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time,
 import pybitcointools as pt
 import state_library
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
-genesisbitcoin=291725-1170#1220
+genesisbitcoin=291881-1170#1220
 #If you are the first person to start mining this currency, you should probably change 290917 to whatever the current bitcoin block count it.
 chain=[genesis]
 chain_db='chain.db'
