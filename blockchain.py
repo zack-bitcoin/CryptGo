@@ -1,4 +1,4 @@
-import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time, config
+import string,cgi,time, json, random, copy, os, copy, urllib, go, urllib2, time, config, threading, multiprocessing
 import pybitcointools as pt
 import state_library
 genesis={'zack':'zack', 'length':-1, 'nonce':'22', 'sha':'00000000000'}
@@ -47,7 +47,10 @@ def add_transactions(txs, db_ex=''):#to local pool
     #This function is order txs**2, that is risky
     txs_orig=copy.deepcopy(txs)
     count=0
-#    print('txs: ' +str(txs_orig))
+    #    print('txs: ' +str(txs_orig))
+    def f(x):
+        if '' in x:
+            return 
     if 'error' in txs:
         return
     for tx in sorted(txs_orig, key=lambda x: x['count']):
@@ -69,7 +72,7 @@ def chain_push(block, db_extention=''):
     statee=state_library.current_state(db_extention)    
     print('CHAIN PUSH')
     if new_block_check(block, statee):
-        print('PASSED TESTS')
+#        print('PASSED TESTS')
         state=verify_transactions(block['transactions'], statee)
         state=state['newstate']
         state['length']+=1
@@ -80,6 +83,7 @@ def chain_push(block, db_extention=''):
         txs=load_transactions(db_extention)
         reset_transactions(db_extention)
         add_transactions(txs, db_extention)
+#        print('exiting Chain Push')
         return push_appendDB(ex(db_extention, chain_db), block)
     else:
         print('FAILED TESTS')
@@ -107,13 +111,9 @@ def chain_unpush(db_ex=''):
             orphaned_txs+=chain[-1-i]['transactions']
         except:
             pass
-#    chain=chain[:-1]
-    #reset_chain() instead, just back up to the nearest save.
     shorten_chain_db(state['length'], db_ex)
     state_library.save_state(state, db_ex)
     reset_transactions(db_ex)
-#    for i in chain[-100:]:
-#        chain_push(i)
     add_transactions(orphaned_txs, db_ex)
     add_transactions(txs, db_ex)
 count_value=0
@@ -165,20 +165,23 @@ def unpackage(dic):
         return json.loads(dic.decode('hex'))
     except:
         error('here')
-def difficulty(bitcoin_count, leng):
+def difficulty(leng):
     def buffer(s, n):
         while len(s)<n:
             s='0'+s
         return s
+    '''
     try:
         hashes_required=int((10**60)*((9.0/10)**(float(bitcoin_count)-float(genesisbitcoin)-(float(leng)/10)))+1)#for bitcoin
 #    hashes_required=int((10**60)*((9.0/10)**(float(bitcoin_count)-float(genesisbitcoin)-(float(leng)/2.5)))+1)#for litcoin
 #    hashes_required=int((10**60)*((9.0/10)**(float(bitcoin_count)-float(genesisbitcoin)-(float(leng)/25)))+1)#for laziness, every 6 seconds??
     except:
         hashes_required=999999999999999999999999999999999999999999999999999999999999
+    '''
+    hashes_required=3000000
     out=buffer(hex(int('f'*64, 16)/hashes_required)[2:], 64)
     return out
-def blockhash(chain_length, nonce, state, transactions, bitcoin_hash):
+def blockhash(chain_length, nonce, state, transactions):
     fixed_transactions=[]
     if len(transactions)==0:
         error('here')
@@ -187,7 +190,7 @@ def blockhash(chain_length, nonce, state, transactions, bitcoin_hash):
         for key in sorted(i.keys()):
             new=new+str(key)+':'+str(i[key])+','
         fixed_transactions.append(new)
-    exact=str(chain_length)+str(nonce)+str(state['recent_hash'])+str(sorted(fixed_transactions))+str(bitcoin_hash)
+    exact=str(chain_length)+str(nonce)+str(state['recent_hash'])+str(sorted(fixed_transactions))
 #    return {'hash':pt.sha256(exact), 'exact':exact}
     return {'hash':pt.sha256(exact)}
 def reverse(l):
@@ -199,36 +202,41 @@ def reverse(l):
 def new_block_check(block, state):
     def f(x):
         return str(block[x])
-    if 'length' not in block or 'bitcoin_count' not in block or 'transactions' not in block:
+    if 'length' not in block or 'transactions' not in block:
         print('ERRROR !')
         return False
-    diff=difficulty(f('bitcoin_count'), f('length'))
+    diff=difficulty(f('length'))
     ver=verify_transactions(block['transactions'], state)
     if not ver['bool']:
         print('44')
         return False
 #    print('new_ block: ' +str(block))
-    if f('sha') != blockhash(f('length'), f('nonce'), state, block['transactions'], f('bitcoin_hash'))['hash']:
-        print('blockhash: ' +str(blockhash(f('length'), f('nonce'), state, block['transactions'], f('bitcoin_hash'))))
+    if f('sha') != blockhash(f('length'), f('nonce'), state, block['transactions'])['hash']:
+        print('blockhash: ' +str(blockhash(f('length'), f('nonce'), state, block['transactions'])))
+        print('sha: ' +str(f('sha')))
         print('block invalid because blockhash was computed incorrectly')
 #        error('here')
         return False
-    a=getblockcount()
-    if int(f('bitcoin_count'))>int(a):
-        print('website: ' + str(type(a)))
-        print('f: ' +str(type(f('bitcoin_count'))))
-        print('COUNT ERROR')
-        return False
+#    a=getblockcount()
+#    '''
+#    if int(f('bitcoin_count'))>int(a):
+#        print('website: ' + str(type(a)))
+#        print('f: ' +str(type(f('bitcoin_count'))))
+#        print('COUNT ERROR')
+#        return False
+#    '''
     elif f('sha')>diff:
         print('block invalid because blockhash is not of sufficient difficulty')
         return False
-    elif f('bitcoin_hash')!=getblockhash(int(f('bitcoin_count'))):
-        print('bitcoin _hash: ' +f('bitcoin_hash'))
-        print('bitcoin_count: ' +f('bitcoin_count'))
-        print('blockhash: ' +str(getblockhash(int(f('bitcoin_count')))))
-        print('block invalid because it does not contain the correct bitcoin hash')
-        error('here')
-        return False
+#    '''
+#    elif f('bitcoin_hash')!=getblockhash(int(f('bitcoin_count'))):
+#        print('bitcoin _hash: ' +f('bitcoin_hash'))
+#        print('bitcoin_count: ' +f('bitcoin_count'))
+#        print('blockhash: ' +str(getblockhash(int(f('bitcoin_count')))))
+#        print('block invalid because it does not contain the correct bitcoin hash')
+#        error('here')
+#        return False
+#    '''
     elif f('prev_sha')!=state['recent_hash']:
         print('block invalid because it does not contain the previous block\'s hash')
         return False
@@ -238,7 +246,7 @@ def verify_transactions(txs, state):
     txs=copy.deepcopy(txs)
     if len(txs)==0:
         return {'bool':True, 'newstate':state}
-    print('txs: ' +str(txs))
+#    print('txs: ' +str(txs))
     length=len(txs)
     state=copy.deepcopy(state)
     remove_list=[]
@@ -250,14 +258,20 @@ def verify_transactions(txs, state):
         txs.remove(i)
     if len(txs)>=length:
         print('HERE')
-        print(txs)
+#        print(txs)
         return {'bool':False}
     if len(txs)==0:
         return {'bool':True, 'newstate':state}
     else:
         return verify_transactions(txs, state)
-
 def send_command(peer, command):
+    if False:#command['type'] in ['pushtx', 'pushblock']:
+        t=threading.Thread(target=send_command_1, args=(peer, command))
+        t.start()
+    else:
+        return send_command_1(peer, command)
+
+def send_command_1(peer, command):
 #    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
     command['version']=4
     url=peer.format(package(command))
@@ -286,44 +300,73 @@ def send_command(peer, command):
         return unpackage(out)
     except:
         return out
-def mine_1(reward_pubkey, peers, times, db_extention):
-    #got to add extention onto all the database names.
-    sha={'hash':100}
-    diff=0
-    hash_count=0
-    print('start mining ' +str(times)+ ' times')
-    while sha['hash']>diff:
-#        print(str(hash_count))
-        if hash_count>=times:
-#            time.sleep(2)#otherwise you send requests WAY TOO FAST and the networking miners shutdown.
-            print('was unable to find blocks')
-            return False
-        state=state_library.current_state(db_extention)
-        bitcoin_count=getblockcount()
-        bitcoin_hash=getblockhash(bitcoin_count)
-        diff=difficulty(bitcoin_count, state['length']+1)
+
+def easy_threading(f, lis):
+    pool = multiprocessing.Pool()
+    n = multiprocessing.cpu_count()
+    out=[]
+    for i in xrange(n):
+        print('f: ' +str(f))
+        print('lis: ' +str(lis))
+        #(260, '00037ec8ec25e6d2c0bafefd59ebbd0b471449f24ac401db5abd74229ff6635L', 0, {u'04b568858a407a8721923b89df9963d30013639ac690cce5f555529b77b83cbfc76950f90be717e38a3ece1f5558f40179f8c9502deca11183bb3a3aea797736a6': {'count': 31, 'amount': 3000000}, 'length': 260, u'047a4a994d2648e15812288643c6266cf33a0823ea8e71bc4cbd13aeb53b761aed0c683d30f757784bfdbe59a4d98886ddf1e7a2aa6295a74aa1175ff556b35c2b': {'count': 231, 'amount': 23000000}, 'recent_hash': u'0001a6c47fd718ca6de35bd45fb99820f628f5012646027f948df4be2c80f2f6'}, [{'count': 31, 'amount': 100000, 'type': 'mint', 'id': '04b568858a407a8721923b89df9963d30013639ac690cce5f555529b77b83cbfc76950f90be717e38a3ece1f5558f40179f8c9502deca11183bb3a3aea797736a6'}])
+        a=pool.apply(f, lis)
+        out.append(a)
+    print('out: ' +str(out))
+    pool.close()
+    pool.join()
+    return out
+
+def mine_2(length, diff, nonce, state, transactions):
+    print('in mine 2')
+    t=time.time()
+    for i in range(config.hashes_till_check):
         nonce=random.randint(0,10000000000000000)
-#        time.sleep(0.01)
-        transactions=load_transactions(db_extention)
-        extra=0
-        for tx in transactions:
-            if tx['id']==reward_pubkey:
-                extra+=1
-        if reward_pubkey not in state:
-            state[reward_pubkey]={'count':1, 'amount':0}
-        if 'count' not in state[reward_pubkey]:
-            state[reward_pubkey]['count']=1
-        count=state[reward_pubkey]['count']+extra
-        transactions.append({'type':'mint', 'amount':10**5, 'id':reward_pubkey, 'count':count})
-        length=state['length']
-        sha=blockhash(length, nonce, state, transactions, bitcoin_hash)
-        hash_count+=1
-#    block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'exact':sha['exact'], 'prev_sha':state['recent_hash']}
-    block={'nonce':nonce, 'length':length, 'sha':sha['hash'], 'transactions':transactions, 'bitcoin_hash':bitcoin_hash, 'bitcoin_count':bitcoin_count, 'prev_sha':state['recent_hash']}
-    print('new link: ' +str(block))
-    chain_push(block, db_extention)
-#    pushblock(block, peers)
-def mine(reward_pubkey, peers, hashes_till_check, db_extention=''):
+        sha=blockhash(length, nonce, state, transactions)
+#        print('type diff: ' +str(diff))
+#        print('type sha: ' +str(sha['hash']))
+        if diff>=sha['hash']:
+            block={'nonce':nonce, 'length':length, 
+                   'sha':sha['hash'], 
+                   'transactions':transactions, 
+                   'prev_sha':state['recent_hash']}
+            #            print('new link####################: ' +str(block))
+            print('a: ' +str(block))
+            return block
+            #            return block
+    print('was unable to find block in '+str(time.time()-t)+' seconds.')
+    return False
+def mine_1(reward_pubkey, peers, times, db_extention):
+#    bitcoin_count=getblockcount()
+    state=state_library.current_state(db_extention)
+    diff=difficulty(state['length']+1)
+    sha={'hash':'f'*64}
+    print('start mining ' +str(times)+ ' times')
+#    bitcoin_hash=getblockhash(bitcoin_count)
+    transactions=load_transactions(db_extention)
+    extra=0
+    for tx in transactions:
+        if tx['id']==reward_pubkey:
+            extra+=1
+    if reward_pubkey not in state:
+        state[reward_pubkey]={'count':1, 'amount':0}
+    if 'count' not in state[reward_pubkey]:
+        state[reward_pubkey]['count']=1
+    count=state[reward_pubkey]['count']+extra
+    transactions.append({'type':'mint', 'amount':10**5, 'id':reward_pubkey, 'count':count})
+    length=state['length']
+    nonce=0
+    hash_count=0
+#    blocks=easy_threading(mine_2, (length, diff, nonce, state, transactions))
+    blocks=[mine_2(length, diff, nonce, state, transactions)]
+    print('blocks:' + str(blocks))
+    blocks=filter(lambda x: x!=False, blocks)
+    if len(blocks)>0:
+        print('blocks:' + str(blocks))
+        for block in blocks:
+            chain_push(block)
+        #    pushblock(block, peers)
+
+def mainloop(reward_pubkey, peers, hashes_till_check, db_extention=''):
     while True:
         peer_check_all(peers, db_extention)
         if hashes_till_check>0:
@@ -333,8 +376,11 @@ def mine(reward_pubkey, peers, hashes_till_check, db_extention=''):
             add_transactions(a)
             reset_appendDB('suggested_transactions.db')
             a=load_appendDB('suggested_blocks.db')
-            for block in a:
-                chain_push(block)
+            #            for block in a:
+            #                chain_push(block)
+#            print('a: ' + str(a))
+            if len(a)>0:
+                chain_push(a[0])
             reset_appendDB('suggested_blocks.db')
         else:
             peer_check_all(peers, db_extention)
@@ -353,7 +399,6 @@ def peer_check_all(peers, db_extention):
     for peer in peers:
         blocks+=peer_check(peer, db_extention)
     for block in blocks:
-        print('$$$$$$$$$$$$$')
         chain_push(block, db_extention)
 
 def pushtx(tx, peers):
@@ -385,7 +430,7 @@ def peer_check(peer, db_ex):
         return []
     if 'error' in block_count.keys():
         return []        
-    print('state: ' +str(state))
+#    print('state: ' +str(state))
     ahead=int(block_count['length'])-int(state['length'])
     if ahead < 0:
         chain=copy.deepcopy(load_chain(db_ex))
@@ -396,7 +441,7 @@ def peer_check(peer, db_ex):
             pushblock(chain[int(block_count['length'])+1],[peer])
         except:
             pass
-        if db_ex=='':
+        if db_ex=='_miner':
             probability(0.2, chain_unpush(db_ex))
         return []
     if ahead == 0:#if we are on the same block, ask for any new txs
@@ -420,10 +465,10 @@ def peer_check(peer, db_ex):
 #            state=try_state
 #            state_library.save_state(state)
 #        return []
-    print("############################## ahead: "+str(ahead))
-    def f():
-        for i in range(5):
-            chain_unpush(db_ex)
+#    print("############################## ahead: "+str(ahead))
+#    def f():
+#        for i in range(5):
+#            chain_unpush(db_ex)
 #    probability(0.03, chain_unpush(db_ex))
     start=int(state['length'])-30
     if start<0:
@@ -434,7 +479,7 @@ def peer_check(peer, db_ex):
         end=block_count['length']
     blocks= cmd({'type':'rangeRequest', 
                  'range':[start, end]})
-    print('@@@@@@@@@@@@downloaded blocks')
+#    print('@@@@@@@@@@@@downloaded blocks')
     if type(blocks)!=type([1,2]):
         return []
     times=1

@@ -24,10 +24,10 @@ except:
     pass
 if __name__ == '__main__':
     #the first miner is for finding blocks. the second miner is for playing go and for talking to the network.
-    todo=[[blockchain.mine, 
+    todo=[[blockchain.mainloop, 
            (my_pubkey, ['http://localhost:'+str(config.listen_port)+'/info?{}'], config.hashes_till_check, '_miner')],
           [listener.main, (config.listen_port, )],
-          [blockchain.mine, (my_pubkey, config.peers_list, 0)],
+          [blockchain.mainloop, (my_pubkey, config.peers_list, 0)],
           [gui.main, (config.gui_port, config.brain_wallet)]
           ]
     for i in todo:
@@ -35,3 +35,16 @@ if __name__ == '__main__':
 #        t.daemon = True
         t.start()
 
+#miner for mining
+ #mine
+ #checks on communication peer
+ #sends commands when it finds new blocks
+#listen
+ #gathers suggested blocks/transactions from peers
+#gui
+ #refresh browser
+ #send commands when it makes new txs
+#mine for communicating
+ #reads suggested blocks/transactions from peers
+ #checks on other peers
+ #

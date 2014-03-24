@@ -1,6 +1,6 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import urllib, json, blockchain, state_library
-PORT=8070
+#PORT=8070
 #HTML
 form='''
 <form name="first" action="{}" method="{}">
@@ -10,10 +10,10 @@ form='''
 newline='''<br />
 {}'''
 empty_page='<html><body>{}</body></html>'
-peers=['http://localhost:8071/tradeChain?dic={}',
-       'http://localhost:8072/tradeChain?dic={}',
-       'http://localhost:8073/tradeChain?dic={}',
-   ]
+#peers=['http://localhost:8071/tradeChain?dic={}',
+#       'http://localhost:8072/tradeChain?dic={}',
+#       'http://localhost:8073/tradeChain?dic={}',
+#   ]
 def test():
     dic='test'
     URL=[]
@@ -75,6 +75,7 @@ def info(dic):
         #blockchain.chain_push(dic['block'])
         #append this block to the list of suggested blocks.
         blockchain.push_appendDB('suggested_blocks.db', dic['block'])
+'''
 def tradeChain(dic):
     print('dic: '+str(dic))
     if dic['type']=='tx':
@@ -84,6 +85,7 @@ def tradeChain(dic):
     print('ERROR--YOU WERE SENT A BAD TX!!')
     print(dic)
     return package({'error':'bad tx'})
+'''
 class MyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         def url2dic(junk):#for in 'get'

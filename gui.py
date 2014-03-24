@@ -139,7 +139,11 @@ def home(dic):
         state=state_library.current_state()
         a=blockchain.verify_transactions(transactions, state)
         print('a: ' +str(a))
-        return a['newstate']
+        print('transactions: ' +str(transactions))
+        try:
+            return a['newstate']
+        except:
+            blockchain.reset_transactions()
     state=clean_state()
     if 'do' in dic.keys():
         if dic['do']=='newGame':

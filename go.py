@@ -1,7 +1,7 @@
 import pybitcointools as pt
 import copy, state_library
 newgame_sig_list=['id', 'type', 'game_name', 'pubkey_white', 'pubkey_black', 'count', 'whos_turn', 'white', 'time', 'black', 'size', 'amount']
-nextturn_sig_list=['id', 'game_name', 'type', 'count', 'where']
+nextturn_sig_list=['id', 'game_name', 'type', 'count', 'where', 'move_number']
 spend_list=['id', 'amount', 'count', 'to']
 def enough_funds(state, pubkey, enough):
     if enough==0:
@@ -38,7 +38,7 @@ def attempt_absorb(tx, state):
     state[tx['id']]['count']+=1
     types=['spend', 'mint', 'nextTurn', 'newGame', 'winGame']
     if tx['type'] not in types: 
-        print('tx: ' +str(tx))
+#        print('tx: ' +str(tx))
         print("invalid because tx['type'] was wrong")
         return (state_orig, False)
     if tx['type']=='mint':
@@ -241,6 +241,18 @@ def nextTurnCheck(i, state):
             return False
     except:
         print('invalid pubkey error')
+        return False
+    if type(i['where']) != type([1,2]) or len(i['where'])!=2:
+        print('move type eerror')
+        return False
+    if i['where'] in board['white']+board['black']:
+        print('spot taken error')
+        return False
+    if i['where'][0]<0 or i['where'][1]<0:
+        print('off board error')
+        return False
+    if i['where'][0]>=board['size'] or i['where'][1]>=board['size']:
+        print('off board error')
         return False
     n=next_board(copy.deepcopy(board), i['where'], state['length'])
     if (len(n['black'])+len(n['white']))<=(len(board['black'])+len(board['white'])):#if it kills, then it lives
