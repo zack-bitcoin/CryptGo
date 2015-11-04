@@ -1,3 +1,7 @@
+This blockchain is no longer maintained.
+CryptGo is being rebuilt on a different blockchain: https://github.com/BumblebeeBat/FlyingFox
+
+
 ##INSTALL=======
 
 You need to have python installed: (linux and mac probably already have python)
